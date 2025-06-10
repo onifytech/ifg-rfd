@@ -1,7 +1,7 @@
 <script lang="ts">
 </script>
 
-<div class="outlineLists bg-gray-200">
+<div class="sidebar bg-gray-200">
 	<h1>Title</h1>
 	<ul>
 		<li><a href="/">List 1</a></li>
@@ -11,8 +11,4 @@
 </div>
 
 <style>
-	.outlineLists {
-		width: 25%;
-		padding: 24px;
-	}
 </style>
