@@ -20,6 +20,14 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	try {
 		const tokens = await google.validateAuthorizationCode(code, codeVerifier);
+
+		const refreshToken = tokens.refreshToken();
+		if (!refreshToken) {
+			console.error('No refresh token received from Google OAuth');
+			return new Response(null, {
+				status: 500
+			});
+		}
 		const googleUserResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
 			headers: {
 				Authorization: `Bearer ${tokens.accessToken()}`
@@ -30,6 +38,17 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const [existingUser] = await db.select().from(user).where(eq(user.googleId, googleUser.sub));
 
 		if (existingUser) {
+			// Update existing user with new tokens
+			await db
+				.update(user)
+				.set({
+					accessToken: tokens.accessToken(),
+					refreshToken: refreshToken,
+					tokenExpiresAt: tokens.accessTokenExpiresAt(),
+					updatedAt: new Date()
+				})
+				.where(eq(user.id, existingUser.id));
+
 			const session = await lucia.createSession(existingUser.id, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);
 			cookies.set(sessionCookie.name, sessionCookie.value, {
@@ -43,7 +62,10 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				googleId: googleUser.sub,
 				email: googleUser.email,
 				name: googleUser.name,
-				picture: googleUser.picture
+				picture: googleUser.picture,
+				accessToken: tokens.accessToken(),
+				refreshToken: tokens.refreshToken(),
+				tokenExpiresAt: tokens.accessTokenExpiresAt()
 			});
 
 			const session = await lucia.createSession(userId, {});

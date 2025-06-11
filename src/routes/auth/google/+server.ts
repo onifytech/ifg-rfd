@@ -6,7 +6,15 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ cookies }) => {
 	const state = generateState();
 	const codeVerifier = generateCodeVerifier();
-	const url = google.createAuthorizationURL(state, codeVerifier, ['profile', 'email']);
+	const url = google.createAuthorizationURL(state, codeVerifier, [
+		'profile',
+		'email',
+		'https://www.googleapis.com/auth/drive',
+		'https://www.googleapis.com/auth/documents'
+	]);
+	
+	url.searchParams.set('access_type', 'offline');
+	url.searchParams.set('prompt', 'consent');
 
 	cookies.set('google_oauth_state', state, {
 		path: '/',

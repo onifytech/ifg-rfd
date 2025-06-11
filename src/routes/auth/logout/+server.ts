@@ -2,7 +2,7 @@ import { lucia } from '$lib/server/auth';
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ locals, cookies }) => {
+export const GET: RequestHandler = async ({ locals, cookies }) => {
 	if (!locals.session) {
 		throw redirect(302, '/');
 	}
