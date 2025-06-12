@@ -14,6 +14,12 @@
 		updatedAt: string;
 		endorsementCount: number;
 		userHasEndorsed: boolean;
+		endorsers: Array<{
+			userId: string;
+			name: string | null;
+			picture: string | null;
+			createdAt: string;
+		}>;
 	};
 
 	export let rfds: RFD[] = [];
@@ -77,10 +83,18 @@
 			{#each rfds as rfd}
 				<li
 					class="rfd-item {selectedRfd?.id === rfd.id ? 'selected' : ''}"
-					on:click={() => handleRfdClick(rfd)}
+					role="button"
+					tabindex="0"
+					onclick={() => handleRfdClick(rfd)}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							handleRfdClick(rfd);
+						}
+					}}
 				>
 					<div class="rfd-header">
-						<div class="title-section" on:click|stopPropagation>
+						<div class="title-section">
 							<div class="title-row">
 								<span class="rfd-number">{formatRfdNumber(rfd.rfdNumber)}</span>
 								<h2>{rfd.title}</h2>
@@ -90,6 +104,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								class="external-link"
+								onclick={(e) => e.stopPropagation}
 							>
 								Open in Google Docs
 							</a>
@@ -108,9 +123,39 @@
 						{#if rfd.updatedAt !== rfd.createdAt}
 							<span class="date">• Updated {formatDate(rfd.updatedAt)}</span>
 						{/if}
-						<span class="endorsement-count">
-							👍 {rfd.endorsementCount} endorsement{rfd.endorsementCount !== 1 ? 's' : ''}
-						</span>
+						<div class="pump-section">
+							<span class="pump-count">
+								🔥 {rfd.endorsementCount} pump{rfd.endorsementCount !== 1 ? 's' : ''}
+							</span>
+							{#if rfd.endorsers && rfd.endorsers.length > 0}
+								<div class="pumper-avatars">
+									{#each rfd.endorsers.slice(0, 5) as endorser, index}
+										{#if endorser.picture}
+											<img
+												src={endorser.picture}
+												alt={endorser.name || 'User'}
+												class="pumper-avatar"
+												style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
+												title={endorser.name || 'User'}
+											/>
+										{:else}
+											<div
+												class="pumper-avatar pumper-avatar-placeholder"
+												style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
+												title={endorser.name || 'User'}
+											>
+												{(endorser.name || 'U').charAt(0).toUpperCase()}
+											</div>
+										{/if}
+									{/each}
+									{#if rfd.endorsers.length > 5}
+										<div class="pumper-more" style="margin-left: -0.5rem">
+											+{rfd.endorsers.length - 5}
+										</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
 					</div>
 
 					{#if parseTags(rfd.tags).length > 0}
@@ -129,71 +174,105 @@
 <style>
 	.content {
 		width: 50%;
-		padding: 24px;
+		padding: 1.5rem; /* rhythm-base */
 		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+	}
+
+	/* Mobile responsiveness */
+	@media (max-width: 768px) {
+		.content {
+			width: 100%;
+			height: calc(100vh - 4rem); /* Account for mobile nav header */
+			min-height: 60vh;
+			padding: 1rem;
+			order: 2;
+		}
 	}
 
 	.header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 24px;
+		margin-bottom: 1.5rem; /* rhythm-base */
 		border-bottom: 1px solid #e5e7eb;
-		padding-bottom: 16px;
+		padding-bottom: 0.75rem; /* rhythm-sm */
+		flex-shrink: 0; /* Prevent header from shrinking */
 	}
 
 	.header h1 {
 		margin: 0;
-		font-size: 28px;
+		font-size: 1.875rem; /* 30px - 3xl */
 		font-weight: 700;
 		color: #111827;
-	}
-
-	.create-btn {
-		background-color: #3b82f6;
-		color: white;
-		padding: 8px 16px;
-		border-radius: 6px;
-		text-decoration: none;
-		font-weight: 500;
-		transition: background-color 0.2s;
-	}
-
-	.create-btn:hover {
-		background-color: #2563eb;
+		line-height: 3rem; /* rhythm-lg line height */
 	}
 
 	.empty-state {
 		text-align: center;
-		padding: 48px 24px;
+		padding: 3rem 1.5rem; /* rhythm-lg vertical, rhythm-base horizontal */
 		color: #6b7280;
-	}
-
-	.empty-state a {
-		color: #3b82f6;
-		text-decoration: none;
-	}
-
-	.empty-state a:hover {
-		text-decoration: underline;
 	}
 
 	.rfd-list {
 		list-style: none;
 		padding: 0;
 		margin: 0;
+		overflow-y: auto;
+		flex: 1; /* Take remaining space */
+		padding-right: 0.75rem; /* rhythm-sm for scrollbar spacing */
 	}
 
 	.rfd-item {
 		border: 1px solid #e5e7eb;
 		border-radius: 8px;
-		padding: 20px;
-		margin-bottom: 16px;
+		padding: 1.5rem; /* rhythm-base */
+		margin-bottom: 0.75rem; /* rhythm-sm */
 		transition:
 			border-color 0.2s,
 			box-shadow 0.2s,
 			background-color 0.2s;
 		cursor: pointer;
+	}
+
+	/* Mobile RFD item adjustments */
+	@media (max-width: 768px) {
+		.rfd-item {
+			padding: 1rem;
+			margin-bottom: 0.5rem;
+		}
+
+		.rfd-header {
+			flex-direction: column;
+			gap: 0.5rem;
+			align-items: flex-start;
+		}
+
+		.title-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+
+		.rfd-header h2 {
+			font-size: 1.125rem; /* Smaller on mobile */
+		}
+
+		.status-badge {
+			margin-left: 0;
+			align-self: flex-start;
+		}
+
+		.rfd-meta {
+			flex-direction: column;
+			gap: 0.25rem;
+		}
+
+		.external-link {
+			font-size: 0.875rem;
+		}
 	}
 
 	.rfd-item:hover {
@@ -212,20 +291,20 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		margin-bottom: 12px;
+		margin-bottom: 0.75rem; /* rhythm-sm */
 	}
 
 	.title-section {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 0.375rem; /* rhythm-xs */
 	}
 
 	.title-row {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 0.75rem; /* rhythm-sm */
 	}
 
 	.rfd-number {
@@ -242,9 +321,10 @@
 
 	.rfd-header h2 {
 		margin: 0;
-		font-size: 20px;
+		font-size: 1.25rem; /* 20px - xl */
 		font-weight: 600;
 		color: #111827;
+		line-height: 1.5rem; /* rhythm base line height */
 		transition: color 0.2s;
 	}
 
@@ -272,14 +352,16 @@
 
 	.summary {
 		color: #6b7280;
-		line-height: 1.6;
-		margin: 0 0 12px 0;
+		line-height: 1.5rem; /* rhythm base line height */
+		margin: 0 0 0.75rem 0; /* rhythm-sm bottom */
 	}
 
 	.rfd-meta {
 		display: flex;
-		gap: 8px;
-		margin-bottom: 12px;
+		flex-wrap: wrap;
+		gap: 0.75rem; /* rhythm-sm */
+		margin-bottom: 0.75rem; /* rhythm-sm */
+		align-items: center;
 	}
 
 	.date {
@@ -287,16 +369,62 @@
 		color: #9ca3af;
 	}
 
-	.endorsement-count {
+	.pump-section {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.pump-count {
 		font-size: 14px;
-		color: #059669;
+		color: #dc2626;
 		font-weight: 500;
+	}
+
+	.pumper-avatars {
+		display: flex;
+		align-items: center;
+		position: relative;
+	}
+
+	.pumper-avatar {
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 50%;
+		border: 2px solid white;
+		position: relative;
+		object-fit: cover;
+	}
+
+	.pumper-avatar-placeholder {
+		background: #6b7280;
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.6rem;
+		font-weight: 600;
+	}
+
+	.pumper-more {
+		background: #e5e7eb;
+		color: #6b7280;
+		border-radius: 50%;
+		width: 1.5rem;
+		height: 1.5rem;
+		border: 2px solid white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.6rem;
+		font-weight: 600;
+		position: relative;
 	}
 
 	.tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 6px;
+		gap: 0.375rem; /* rhythm-xs */
 	}
 
 	.tag {

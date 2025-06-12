@@ -139,15 +139,38 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			.from(rfdEndorsement)
 			.where(eq(rfdEndorsement.userId, user.id));
 
+		// Get endorsement details with user info for avatars
+		const endorsementDetails = await db
+			.select({
+				rfdId: rfdEndorsement.rfdId,
+				userId: rfdEndorsement.userId,
+				userName: userTable.name,
+				userPicture: userTable.picture,
+				userAvatarBase64: userTable.avatarBase64,
+				createdAt: rfdEndorsement.createdAt
+			})
+			.from(rfdEndorsement)
+			.leftJoin(userTable, eq(rfdEndorsement.userId, userTable.id))
+			.orderBy(rfdEndorsement.createdAt);
+
 		// Combine data
 		const rfdsWithEndorsements = allRfds.map((rfdItem) => {
 			const endorsementCount = endorsementCounts.find((ec) => ec.rfdId === rfdItem.id)?.count || 0;
 			const userHasEndorsed = userEndorsements.some((ue) => ue.rfdId === rfdItem.id);
+			const endorsers = endorsementDetails
+				.filter((ed) => ed.rfdId === rfdItem.id)
+				.map((ed) => ({
+					userId: ed.userId,
+					name: ed.userName,
+					picture: ed.userAvatarBase64 || ed.userPicture, // Prefer base64, fallback to URL
+					createdAt: ed.createdAt
+				}));
 
 			return {
 				...rfdItem,
 				endorsementCount,
-				userHasEndorsed
+				userHasEndorsed,
+				endorsers
 			};
 		});
 
@@ -175,9 +198,9 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		const body = await request.json();
 		const { rfdId, action } = body;
 
-		if (!rfdId || !action || !['endorse', 'unendorse'].includes(action)) {
+		if (!rfdId || !action || !['pump', 'unpump'].includes(action)) {
 			return json(
-				{ error: 'Invalid request. Need rfdId and action (endorse/unendorse)' },
+				{ error: 'Invalid request. Need rfdId and action (pump/unpump)' },
 				{ status: 400 }
 			);
 		}
@@ -188,8 +211,8 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			return json({ error: 'RFD not found' }, { status: 404 });
 		}
 
-		if (action === 'endorse') {
-			// Check if user already endorsed this RFD
+		if (action === 'pump') {
+			// Check if user already pumped this RFD
 			const [existingEndorsement] = await db
 				.select()
 				.from(rfdEndorsement)
@@ -197,10 +220,10 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 				.limit(1);
 
 			if (existingEndorsement) {
-				return json({ error: 'You have already endorsed this RFD' }, { status: 400 });
+				return json({ error: 'You have already pumped this RFD' }, { status: 400 });
 			}
 
-			// Create endorsement
+			// Create pump
 			const endorsementId = generateId(15);
 			await db.insert(rfdEndorsement).values({
 				id: endorsementId,
@@ -208,14 +231,14 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 				userId: user.id
 			});
 
-			return json({ message: 'RFD endorsed successfully' });
+			return json({ message: 'RFD pumped successfully' });
 		} else {
-			// Remove endorsement
+			// Remove pump
 			await db
 				.delete(rfdEndorsement)
 				.where(and(eq(rfdEndorsement.rfdId, rfdId), eq(rfdEndorsement.userId, user.id)));
 
-			return json({ message: 'Endorsement removed successfully' });
+			return json({ message: 'Pump removed successfully' });
 		}
 	} catch (error) {
 		console.error('Error handling endorsement:', error);

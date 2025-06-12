@@ -19,7 +19,8 @@ export const lucia = new Lucia(adapter, {
 			googleId: attributes.googleId,
 			email: attributes.email,
 			name: attributes.name,
-			picture: attributes.picture
+			picture: attributes.picture,
+			avatarBase64: attributes.avatarBase64
 		};
 	}
 });
@@ -38,6 +39,7 @@ declare module 'lucia' {
 			email: string;
 			name: string;
 			picture: string | null;
+			avatarBase64: string | null;
 		};
 	}
 }

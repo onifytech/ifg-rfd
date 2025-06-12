@@ -14,9 +14,16 @@
 		updatedAt: string;
 		endorsementCount: number;
 		userHasEndorsed: boolean;
+		endorsers: Array<{
+			userId: string;
+			name: string | null;
+			picture: string | null;
+			createdAt: string;
+		}>;
 	};
 
 	export let selectedRfd: RFD | null = null;
+	export let isMobileModal: boolean = false;
 
 	let isEndorsing = false;
 
@@ -34,11 +41,11 @@
 		return `RFD-${rfdNumber.toString().padStart(3, '0')}`;
 	}
 
-	async function handleEndorsement() {
+	async function handlePump() {
 		if (!selectedRfd || isEndorsing) return;
 
 		isEndorsing = true;
-		const action = selectedRfd.userHasEndorsed ? 'unendorse' : 'endorse';
+		const action = selectedRfd.userHasEndorsed ? 'unpump' : 'pump';
 
 		try {
 			const response = await fetch('/api/rfd', {
@@ -66,11 +73,11 @@
 				window.location.reload();
 			} else {
 				const errorData = await response.json();
-				alert(errorData.error || 'Failed to update endorsement');
+				alert(errorData.error || 'Failed to update pump');
 			}
 		} catch (error) {
-			console.error('Endorsement error:', error);
-			alert('Failed to update endorsement');
+			console.error('Pump error:', error);
+			alert('Failed to update pump');
 		} finally {
 			isEndorsing = false;
 		}
@@ -103,7 +110,7 @@
 	}
 </script>
 
-<div class="preview-container border-l border-gray-300 bg-white">
+<div class="preview-container {isMobileModal ? 'mobile-modal-preview' : ''} border-l border-gray-300 bg-white">
 	{#if selectedRfd}
 		<div class="preview-header flex flex-col md:flex-row md:items-center md:justify-between">
 			<div class="mb-4 md:mb-0">
@@ -133,19 +140,19 @@
 						<div>
 							<button
 								class="rounded px-4 py-2 font-medium transition-colors {selectedRfd.userHasEndorsed
-									? 'bg-green-600 text-white hover:bg-green-700'
+									? 'bg-red-600 text-white hover:bg-red-700'
 									: 'bg-gray-200 text-gray-800 hover:bg-gray-300'}"
-								on:click={handleEndorsement}
+								onclick={handlePump}
 								disabled={isEndorsing}
 							>
-								<span class="mr-2">👍</span>
+								<span class="mr-2">🔥</span>
 								<span>
 									{#if isEndorsing}
 										Processing...
 									{:else if selectedRfd.userHasEndorsed}
-										Endorsed ({selectedRfd.endorsementCount})
+										Pumped ({selectedRfd.endorsementCount})
 									{:else}
-										Endorse ({selectedRfd.endorsementCount})
+										Pump ({selectedRfd.endorsementCount})
 									{/if}
 								</span>
 							</button>
@@ -220,6 +227,30 @@
 				</div>
 			{/if}
 
+			{#if selectedRfd.endorsers && selectedRfd.endorsers.length > 0}
+				<div class="mb-6">
+					<h3 class="mb-3 text-lg font-semibold">Who's Pumping 🔥</h3>
+					<div class="flex flex-wrap gap-3">
+						{#each selectedRfd.endorsers as endorser}
+							<div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+								{#if endorser.picture}
+									<img
+										src={endorser.picture}
+										alt={endorser.name || 'User'}
+										class="h-6 w-6 rounded-full object-cover"
+									/>
+								{:else}
+									<div class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-400 text-xs font-semibold text-white">
+										{(endorser.name || 'U').charAt(0).toUpperCase()}
+									</div>
+								{/if}
+								<span class="text-sm font-medium text-gray-900">{endorser.name || 'Unknown User'}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
 			<div class="mb-6">
 				<h3 class="mb-3 text-lg font-semibold">Google Document</h3>
 				<div class="doc-embed overflow-hidden rounded-lg border border-gray-200">
@@ -252,6 +283,28 @@
 		overflow-y: auto;
 	}
 
+	/* Mobile modal preview styles */
+	.mobile-modal-preview {
+		border: none !important;
+		height: auto !important;
+		overflow-y: visible !important;
+	}
+
+	.mobile-modal-preview .preview-header {
+		padding: 1rem !important;
+	}
+
+	.mobile-modal-preview .doc-embed {
+		height: 400px !important;
+	}
+
+	/* Mobile responsiveness */
+	@media (max-width: 768px) {
+		.preview-container:not(.mobile-modal-preview) {
+			display: none; /* Hide regular preview on mobile */
+		}
+	}
+
 	.preview-header {
 		border-bottom: 1px solid #e5e7eb;
 		padding: 1.5rem;
@@ -272,6 +325,22 @@
 	.doc-embed {
 		height: 600px;
 		overflow: hidden;
+	}
+
+	/* Mobile preview adjustments */
+	@media (max-width: 768px) {
+		.preview-header {
+			padding: 1rem;
+		}
+
+		.doc-embed {
+			height: 400px; /* Smaller embed height on mobile */
+		}
+
+		.empty-state {
+			min-height: 200px;
+			padding: 2rem;
+		}
 	}
 
 	.doc-iframe {

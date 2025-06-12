@@ -6,6 +6,8 @@ export const user = pgTable('user', {
 	email: text('email').notNull(),
 	name: text('name').notNull(),
 	picture: text('picture'),
+	avatarBase64: text('avatar_base64'), // Store base64 encoded avatar
+	avatarUpdatedAt: timestamp('avatar_updated_at'), // Track when avatar was last synced
 	accessToken: text('access_token'),
 	refreshToken: text('refresh_token'),
 	tokenExpiresAt: timestamp('token_expires_at'),

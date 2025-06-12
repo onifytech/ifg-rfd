@@ -1,7 +1,10 @@
 <script lang="ts">
-	import { onMount, createEventDispatcher } from 'svelte';
+	import { onMount } from 'svelte';
+	interface CreateRFDProps {
+		onClose: () => void;
+	}
 
-	const dispatch = createEventDispatcher();
+	const { onClose }: CreateRFDProps = $props();
 
 	interface Template {
 		id: string;
@@ -56,7 +59,10 @@
 					templateId: selectedTemplate,
 					title: title.trim(),
 					description: description.trim(),
-					tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+					tags: tags
+						.split(',')
+						.map((tag) => tag.trim())
+						.filter((tag) => tag)
 				})
 			});
 
@@ -83,31 +89,36 @@
 		description = '';
 		tags = '';
 		selectedTemplate = '';
-		dispatch('close');
+		onClose();
 	}
 </script>
 
-<div class="p-6">
+<div class="mobile-form p-6">
 	{#if error}
-		<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+		<div class="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-700">
 			{error}
 		</div>
 	{/if}
 
 	<div class="mb-4">
-		<p class="text-gray-600 text-sm">Start a new Request for Discussion using a template</p>
+		<p class="text-sm text-gray-600">Start a new Request for Discussion using a template</p>
 	</div>
 
-	<form onsubmit={(e) => { e.preventDefault(); createRFD(); }}>
+	<form
+		onsubmit={(e) => {
+			e.preventDefault();
+			createRFD();
+		}}
+	>
 		<!-- Template Selection -->
 		<div class="mb-4">
-			<label for="template" class="block text-sm font-medium text-gray-700 mb-2">
+			<label for="template" class="mb-2 block text-sm font-medium text-gray-700">
 				Select Template
 			</label>
 			<select
 				id="template"
 				bind:value={selectedTemplate}
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 				required
 			>
 				<option value="">Choose a template...</option>
@@ -119,22 +130,20 @@
 
 		<!-- Title -->
 		<div class="mb-4">
-			<label for="title" class="block text-sm font-medium text-gray-700 mb-2">
-				RFD Title *
-			</label>
+			<label for="title" class="mb-2 block text-sm font-medium text-gray-700"> RFD Title * </label>
 			<input
 				type="text"
 				id="title"
 				bind:value={title}
 				placeholder="Brief, descriptive title for your RFD"
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 				required
 			/>
 		</div>
 
 		<!-- Description -->
 		<div class="mb-4">
-			<label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+			<label for="description" class="mb-2 block text-sm font-medium text-gray-700">
 				Description
 			</label>
 			<textarea
@@ -142,23 +151,21 @@
 				bind:value={description}
 				placeholder="Brief description of what this RFD discusses"
 				rows="3"
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 			></textarea>
 		</div>
 
 		<!-- Tags -->
 		<div class="mb-6">
-			<label for="tags" class="block text-sm font-medium text-gray-700 mb-2">
-				Tags
-			</label>
+			<label for="tags" class="mb-2 block text-sm font-medium text-gray-700"> Tags </label>
 			<input
 				type="text"
 				id="tags"
 				bind:value={tags}
 				placeholder="architecture, api, security, frontend (comma-separated)"
-				class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 			/>
-			<p class="text-sm text-gray-500 mt-1">Separate tags with commas</p>
+			<p class="mt-1 text-sm text-gray-500">Separate tags with commas</p>
 		</div>
 
 		<!-- Actions -->
@@ -166,14 +173,14 @@
 			<button
 				type="button"
 				onclick={resetForm}
-				class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+				class="rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
 			>
 				Cancel
 			</button>
 			<button
 				type="submit"
 				disabled={isLoading || !selectedTemplate || !title.trim()}
-				class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-md transition-colors font-medium"
+				class="rounded-md bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400"
 			>
 				{#if isLoading}
 					Creating...
@@ -184,3 +191,22 @@
 		</div>
 	</form>
 </div>
+
+<style>
+	/* Mobile responsiveness for form */
+	@media (max-width: 768px) {
+		.mobile-form {
+			padding: 1rem;
+		}
+
+		/* Stack action buttons vertically on mobile */
+		.mobile-form form > div:last-child {
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.mobile-form form > div:last-child button {
+			width: 100%;
+		}
+	}
+</style>

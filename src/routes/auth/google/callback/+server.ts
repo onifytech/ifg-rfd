@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+import { downloadImageAsBase64, shouldUpdateAvatar } from '$lib/server/avatar-sync';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const code = url.searchParams.get('code');
@@ -38,10 +39,31 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const [existingUser] = await db.select().from(user).where(eq(user.googleId, googleUser.sub));
 
 		if (existingUser) {
-			// Update existing user with new tokens
+			// Check if we need to update avatar
+			let avatarBase64 = existingUser.avatarBase64;
+			let avatarUpdatedAt = existingUser.avatarUpdatedAt;
+
+			if (shouldUpdateAvatar(existingUser.avatarUpdatedAt)) {
+				try {
+					const avatarResult = await downloadImageAsBase64(googleUser.picture);
+					if (avatarResult.success && avatarResult.base64) {
+						avatarBase64 = avatarResult.base64;
+						avatarUpdatedAt = new Date();
+						console.log(`Updated avatar for user ${existingUser.email}`);
+					}
+				} catch (error) {
+					console.error('Failed to sync avatar for existing user:', error);
+				}
+			}
+
+			// Update existing user with new tokens and potentially new avatar
 			await db
 				.update(user)
 				.set({
+					name: googleUser.name, // Update name in case it changed
+					picture: googleUser.picture, // Update picture URL
+					avatarBase64,
+					avatarUpdatedAt,
 					accessToken: tokens.accessToken(),
 					refreshToken: refreshToken,
 					tokenExpiresAt: tokens.accessTokenExpiresAt(),
@@ -56,6 +78,21 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				...sessionCookie.attributes
 			});
 		} else {
+			// Download avatar for new user
+			let avatarBase64: string | null = null;
+			let avatarUpdatedAt: Date | null = null;
+
+			try {
+				const avatarResult = await downloadImageAsBase64(googleUser.picture);
+				if (avatarResult.success && avatarResult.base64) {
+					avatarBase64 = avatarResult.base64;
+					avatarUpdatedAt = new Date();
+					console.log(`Downloaded avatar for new user ${googleUser.email}`);
+				}
+			} catch (error) {
+				console.error('Failed to sync avatar for new user:', error);
+			}
+
 			const userId = generateId(15);
 			await db.insert(user).values({
 				id: userId,
@@ -63,6 +100,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				email: googleUser.email,
 				name: googleUser.name,
 				picture: googleUser.picture,
+				avatarBase64,
+				avatarUpdatedAt,
 				accessToken: tokens.accessToken(),
 				refreshToken: tokens.refreshToken(),
 				tokenExpiresAt: tokens.accessTokenExpiresAt()

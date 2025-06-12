@@ -1,7 +1,3 @@
-<script lang="ts">
-	import { page } from '$app/stores';
-</script>
-
 <svelte:head>
 	<title>Sign In</title>
 	<meta name="description" content="Sign in to your account" />
@@ -113,13 +109,28 @@
 		transform: translateY(0);
 	}
 
-	@media (max-width: 480px) {
+	@media (max-width: 768px) {
+		.login-container {
+			padding: 1rem;
+		}
+
 		.login-card {
-			padding: 32px 24px;
+			padding: 2rem 1.5rem;
+			max-width: 350px;
 		}
 
 		.logo h1 {
-			font-size: 24px;
+			font-size: 1.5rem; /* 24px - following vertical rhythm */
+			line-height: 1.5rem;
+		}
+
+		.logo {
+			margin-bottom: 2rem;
+		}
+
+		.google-signin-btn {
+			padding: 0.75rem 1.5rem;
+			font-size: 0.875rem;
 		}
 	}
 </style>
