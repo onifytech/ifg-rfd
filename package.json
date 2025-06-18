@@ -49,6 +49,7 @@
 	},
 	"dependencies": {
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
+		"amplify-adapter": "^1.1.0",
 		"arctic": "^3.7.0",
 		"drizzle-orm": "^0.40.0",
 		"googleapis": "^150.0.1",
