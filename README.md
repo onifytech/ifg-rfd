@@ -47,8 +47,8 @@ cp .env.example .env
 # Start the database
 pnpm run db:start
 
-# Push database schema
-pnpm run db:push
+# Migrate database schema from migration file
+pnpm run db:migrate
 
 # Start development server
 pnpm run dev
