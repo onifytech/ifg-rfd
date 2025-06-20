@@ -29,10 +29,7 @@ export class GoogleDriveService {
 		} else if (accessToken) {
 			// Fallback to user OAuth for templates/reading
 			this.isServiceAccount = false;
-			auth = new google.auth.OAuth2(
-				env.GOOGLE_CLIENT_ID,
-				env.GOOGLE_CLIENT_SECRET
-			);
+			auth = new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
 			auth.setCredentials({
 				access_token: accessToken
 			});
@@ -117,7 +114,9 @@ export class GoogleDriveService {
 	 * Build replace requests for template placeholders
 	 */
 	private buildReplaceRequests(data: RFDTemplateData) {
-		const requests: Array<{ replaceAllText: { containsText: { text: string; matchCase: boolean }; replaceText: string } }> = [];
+		const requests: Array<{
+			replaceAllText: { containsText: { text: string; matchCase: boolean }; replaceText: string };
+		}> = [];
 
 		// Replace common placeholders
 		const replacements = {
@@ -176,26 +175,14 @@ export class GoogleDriveService {
 				});
 			}
 
-			// Set organization-wide comment permissions if domain is configured
-			if (env.GOOGLE_WORKSPACE_DOMAIN) {
-				await this.drive.permissions.create({
-					fileId: docId,
-					requestBody: {
-						role: 'commenter',
-						type: 'domain',
-						domain: env.GOOGLE_WORKSPACE_DOMAIN
-					}
-				});
-			} else {
-				// Fallback: Make document accessible to anyone with the link (comment access)
-				await this.drive.permissions.create({
-					fileId: docId,
-					requestBody: {
-						role: 'commenter',
-						type: 'anyone'
-					}
-				});
-			}
+			// Fallback: Make document accessible to anyone with the link (comment access)
+			await this.drive.permissions.create({
+				fileId: docId,
+				requestBody: {
+					role: 'commenter',
+					type: 'anyone'
+				}
+			});
 
 			// Add specific team members with editor access if configured
 			if (env.GOOGLE_RFD_TEAM_EMAILS) {
@@ -224,7 +211,6 @@ export class GoogleDriveService {
 			throw new Error('Failed to update document permissions');
 		}
 	}
-
 
 	/**
 	 * Create a service account instance for RFD management
