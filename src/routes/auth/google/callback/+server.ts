@@ -124,7 +124,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		return new Response(null, {
 			status: 302,
 			headers: {
-				Location: redirectUrl || '/'
+				Location: `/auth/processing${redirectUrl ? '?redirect=' + encodeURIComponent(redirectUrl) : ''}`
 			}
 		});
 	} catch (e) {

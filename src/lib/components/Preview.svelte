@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getStatusColor, getStatusLabel, statusOptions } from '$lib/utils/statusUtils.js';
 	type User = {
 		id: string;
 		name: string;
@@ -6,7 +7,6 @@
 		role: string;
 		picture?: string | null;
 	};
-
 	type RFD = {
 		id: string;
 		rfdNumber: number;
@@ -29,12 +29,10 @@
 			createdAt: string;
 		}>;
 	};
-
 	export let selectedRfd: RFD | null = null;
 	export let isMobileModal: boolean = false;
 	export let user: User | null = null;
 	export let onRfdUpdate: ((updatedRfd: RFD) => void) | null = null;
-
 	let isEndorsing = false;
 	let isEditing = false;
 	let isLoading = false;
@@ -47,21 +45,17 @@
 	let showTagDropdown = false;
 	let comment = '';
 	let error = '';
-
+	// Tab management
+	let activeTab = 'metadata';
+	const tabs = [
+		{ id: 'metadata', label: 'Metadata', icon: '📋' },
+		{ id: 'document', label: 'RFD Document', icon: '📄' },
+		{ id: 'pumping', label: "Who's Pumping!", icon: '🔥' }
+	];
 	// Permission checks
 	$: isAdmin = user?.role === 'admin';
 	$: isOwner = user?.id === selectedRfd?.authorId;
 	$: canEdit = isAdmin || isOwner;
-
-	const statusOptions = [
-		{ value: 'draft', label: 'Draft' },
-		{ value: 'open_for_review', label: 'Open for Review' },
-		{ value: 'accepted', label: 'Accepted' },
-		{ value: 'enforced', label: 'Enforced' },
-		{ value: 'rejected', label: 'Rejected' },
-		{ value: 'retracted', label: 'Retracted' }
-	];
-
 	function formatDate(dateString: string) {
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -71,41 +65,28 @@
 			minute: '2-digit'
 		});
 	}
-
 	function formatRfdNumber(rfdNumber: number): string {
 		return `RFD-${rfdNumber.toString().padStart(3, '0')}`;
 	}
-
 	async function handlePump() {
 		if (!selectedRfd || isEndorsing) return;
-
 		isEndorsing = true;
 		const action = selectedRfd.userHasEndorsed ? 'unpump' : 'pump';
-
 		try {
-			const response = await fetch('/api/rfd', {
-				method: 'PUT',
+			const response = await fetch(`/api/rfd/${selectedRfd.id}/endorsement`, {
+				method: action === 'pump' ? 'POST' : 'DELETE',
 				headers: {
 					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					rfdId: selectedRfd.id,
-					action
-				})
+				}
 			});
-
 			if (response.ok) {
-				// Update the local state optimistically
-				selectedRfd = {
-					...selectedRfd,
-					userHasEndorsed: !selectedRfd.userHasEndorsed,
-					endorsementCount: selectedRfd.userHasEndorsed
-						? selectedRfd.endorsementCount - 1
-						: selectedRfd.endorsementCount + 1
-				};
-
-				// Refresh the page to get updated data
-				window.location.reload();
+				const result = await response.json();
+				// Update selectedRfd with the fresh data from the server
+				selectedRfd = result.rfd;
+				// Notify parent component of the update
+				if (onRfdUpdate) {
+					onRfdUpdate(result.rfd);
+				}
 			} else {
 				const errorData = await response.json();
 				alert(errorData.error || 'Failed to update pump');
@@ -117,24 +98,9 @@
 			isEndorsing = false;
 		}
 	}
-
-	function getStatusColor(status: string) {
-		switch (status) {
-			case 'draft':
-				return '#94a3b8';
-			case 'review':
-				return '#f59e0b';
-			case 'approved':
-				return '#10b981';
-			case 'rejected':
-				return '#ef4444';
-			case 'archived':
-				return '#6b7280';
-			default:
-				return '#94a3b8';
-		}
+	function setActiveTab(tabId: string) {
+		activeTab = tabId;
 	}
-
 	function parseTags(tags: string | null): string[] {
 		if (!tags) return [];
 		try {
@@ -143,14 +109,12 @@
 			return [];
 		}
 	}
-
 	function generateTagColor(tag: string): string {
 		// Generate a consistent color based on the tag name
 		let hash = 0;
 		for (let i = 0; i < tag.length; i++) {
 			hash = tag.charCodeAt(i) + ((hash << 5) - hash);
 		}
-
 		const colors = [
 			'#ef4444',
 			'#f59e0b',
@@ -168,10 +132,8 @@
 			'#6b7280',
 			'#374151'
 		];
-
 		return colors[Math.abs(hash) % colors.length];
 	}
-
 	async function loadAvailableTags() {
 		try {
 			const response = await fetch('/api/rfd/tags');
@@ -183,7 +145,6 @@
 			console.error('Error loading tags:', error);
 		}
 	}
-
 	function addTag(tag: string) {
 		const trimmedTag = tag.trim();
 		if (trimmedTag && !editedTags.includes(trimmedTag)) {
@@ -192,16 +153,13 @@
 		tagInput = '';
 		showTagDropdown = false;
 	}
-
 	function removeTag(tagToRemove: string) {
 		editedTags = editedTags.filter((tag) => tag !== tagToRemove);
 	}
-
 	function handleTagInput(event: Event) {
 		const target = event.target as HTMLInputElement;
 		tagInput = target.value;
 		showTagDropdown = tagInput.length > 0;
-
 		// Add tag on Enter or comma
 		if (event instanceof KeyboardEvent) {
 			if (event.key === 'Enter' || event.key === ',') {
@@ -214,14 +172,11 @@
 			}
 		}
 	}
-
 	$: filteredTags = availableTags.filter(
 		(tag) => tag.toLowerCase().includes(tagInput.toLowerCase()) && !editedTags.includes(tag)
 	);
-
 	function startEditing() {
 		if (!selectedRfd || !canEdit) return;
-
 		isEditing = true;
 		editedTitle = selectedRfd.title;
 		editedSummary = selectedRfd.summary || '';
@@ -231,11 +186,9 @@
 		showTagDropdown = false;
 		comment = '';
 		error = '';
-
 		// Load available tags for autocomplete
 		loadAvailableTags();
 	}
-
 	function cancelEditing() {
 		isEditing = false;
 		editedTitle = '';
@@ -247,42 +200,34 @@
 		comment = '';
 		error = '';
 	}
-
 	async function saveChanges() {
 		if (isLoading || !selectedRfd) return;
-
 		const hasStatusChange = selectedStatus !== selectedRfd.status;
 		const hasTitleChange = editedTitle !== selectedRfd.title;
 		const hasSummaryChange = editedSummary !== (selectedRfd.summary || '');
 		const hasTagsChange = JSON.stringify(editedTags) !== (selectedRfd.tags || JSON.stringify([]));
-
 		// Check permissions for the changes being made
 		if (hasStatusChange && !isAdmin) {
 			error = 'Only administrators can change RFD status';
 			return;
 		}
-
 		if ((hasTitleChange || hasSummaryChange || hasTagsChange) && !isOwner && !isAdmin) {
 			error = 'Only the RFD owner can change title, summary, and tags';
 			return;
 		}
-
 		if (!hasStatusChange && !hasTitleChange && !hasSummaryChange && !hasTagsChange) {
 			cancelEditing();
 			return;
 		}
-
 		isLoading = true;
 		error = '';
-
 		try {
-			const response = await fetch('/api/rfd/status', {
+			const response = await fetch(`/api/rfd/${selectedRfd.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					rfdId: selectedRfd.id,
 					status: hasStatusChange ? selectedStatus : undefined,
 					title: hasTitleChange ? editedTitle : undefined,
 					summary: hasSummaryChange ? editedSummary : undefined,
@@ -290,13 +235,10 @@
 					comment: comment || undefined
 				})
 			});
-
 			const result = await response.json();
-
 			if (!response.ok) {
 				throw new Error(result.error || 'Failed to update RFD');
 			}
-
 			if (onRfdUpdate) {
 				onRfdUpdate(result.rfd);
 			}
@@ -307,7 +249,6 @@
 			isLoading = false;
 		}
 	}
-
 </script>
 
 <div
@@ -332,7 +273,7 @@
 								class="status-tag inline-block rounded-full px-3 py-1 text-xs font-medium text-white"
 								style="background-color: {getStatusColor(selectedRfd.status)}"
 							>
-								{selectedRfd.status}
+								{getStatusLabel(selectedRfd.status)}
 							</span>
 						</div>
 					</div>
@@ -388,12 +329,10 @@
 				</div>
 			</div>
 		</div>
-
 		{#if isEditing}
 			<div class="edit-form-container border-b border-gray-200 bg-gray-50 p-6">
 				<div class="edit-form">
 					<h3 class="mb-4 text-lg font-semibold">Edit RFD</h3>
-
 					<div class="form-group mb-4">
 						<label for="title-edit" class="mb-2 block text-sm font-medium text-gray-700"
 							>Title:</label
@@ -406,7 +345,6 @@
 							disabled={isLoading || (!isOwner && !isAdmin)}
 						/>
 					</div>
-
 					<div class="form-group mb-4">
 						<label for="summary-edit" class="mb-2 block text-sm font-medium text-gray-700"
 							>Summary:</label
@@ -419,7 +357,6 @@
 							disabled={isLoading || (!isOwner && !isAdmin)}
 						></textarea>
 					</div>
-
 					<div class="form-group mb-4">
 						<label for="tags-edit" class="mb-2 block text-sm font-medium text-gray-700">Tags:</label
 						>
@@ -471,7 +408,6 @@
 							{/if}
 						</div>
 					</div>
-
 					{#if isAdmin}
 						<div class="form-group mb-4">
 							<label for="status-edit" class="mb-2 block text-sm font-medium text-gray-700"
@@ -488,7 +424,6 @@
 								{/each}
 							</select>
 						</div>
-
 						<div class="form-group mb-4">
 							<label for="comment-edit" class="mb-2 block text-sm font-medium text-gray-700"
 								>Comment (optional):</label
@@ -503,7 +438,6 @@
 							></textarea>
 						</div>
 					{/if}
-
 					{#if error}
 						<div
 							class="error mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700"
@@ -511,7 +445,6 @@
 							{error}
 						</div>
 					{/if}
-
 					<div class="button-group flex gap-3">
 						<button
 							type="button"
@@ -533,103 +466,190 @@
 				</div>
 			</div>
 		{/if}
-
-		<div class="p-6">
-			{#if selectedRfd.summary}
-				<div class="mb-6">
-					<h3 class="mb-3 text-lg font-semibold">Summary</h3>
-					<div class="rounded-lg bg-gray-50 p-4">
-						<p>{selectedRfd.summary}</p>
-					</div>
-				</div>
-			{/if}
-
-			<div class="mb-6">
-				<h3 class="mb-3 text-lg font-semibold">Details</h3>
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-					<div>
-						<div class="mb-3">
-							<div class="mb-1 block text-sm font-medium text-gray-700">Created</div>
-							<div>
-								<span class="text-gray-600">{formatDate(selectedRfd.createdAt)}</span>
-							</div>
-						</div>
-					</div>
-					<div>
-						<div class="mb-3">
-							<div class="mb-1 block text-sm font-medium text-gray-700">Last Updated</div>
-							<div>
-								<span class="text-gray-600">{formatDate(selectedRfd.updatedAt)}</span>
-							</div>
-						</div>
-					</div>
-
-					<div>
-						<div class="mb-3">
-							<div class="mb-1 block text-sm font-medium text-gray-700">Creator</div>
-							<div>
-								<span class="font-medium">{selectedRfd.authorName || 'Unknown'}</span>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			{#if parseTags(selectedRfd.tags).length > 0}
-				<div class="mb-6">
-					<h3 class="mb-3 text-lg font-semibold">Tags</h3>
-					<div class="flex flex-wrap gap-2">
-						{#each parseTags(selectedRfd.tags) as tag}
-							<span
-								class="rounded-full px-2 py-1 text-xs font-medium text-white"
-								style="background-color: {generateTagColor(tag)}"
-							>
-								{tag}
+		<!-- Tab Navigation -->
+		<div class="tab-navigation border-b border-gray-200 bg-white">
+			<div class="flex">
+				{#each tabs as tab}
+					<button
+						class="tab-button flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors {activeTab ===
+						tab.id
+							? 'border-b-2 border-blue-500 text-blue-600'
+							: 'text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
+						onclick={() => setActiveTab(tab.id)}
+					>
+						<span>{tab.icon}</span>
+						<span>{tab.label}</span>
+						{#if tab.id === 'pumping' && selectedRfd.endorsementCount > 0}
+							<span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+								{selectedRfd.endorsementCount}
 							</span>
-						{/each}
-					</div>
-				</div>
-			{/if}
-
-			{#if selectedRfd.endorsers && selectedRfd.endorsers.length > 0}
-				<div class="mb-6">
-					<h3 class="mb-3 text-lg font-semibold">Who's Pumping 🔥</h3>
-					<div class="flex flex-wrap gap-3">
-						{#each selectedRfd.endorsers as endorser}
-							<div class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
-								{#if endorser.picture}
-									<img
-										src={endorser.picture}
-										alt={endorser.name || 'User'}
-										class="h-6 w-6 rounded-full object-cover"
-									/>
-								{:else}
-									<div
-										class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-400 text-xs font-semibold text-white"
-									>
-										{(endorser.name || 'U').charAt(0).toUpperCase()}
-									</div>
-								{/if}
-								<span class="text-sm font-medium text-gray-900"
-									>{endorser.name || 'Unknown User'}</span
-								>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
-
-			<div class="mb-6">
-				<h3 class="mb-3 text-lg font-semibold">Google Document</h3>
-				<div class="doc-embed overflow-hidden rounded-lg border border-gray-200">
-					<iframe
-						src="{selectedRfd.googleDocUrl}/preview?embedded=true&rm=minimal&widget=true&chrome=false"
-						title="RFD Document Preview"
-						class="doc-iframe"
-						sandbox="allow-scripts allow-same-origin"
-					></iframe>
-				</div>
+						{/if}
+					</button>
+				{/each}
 			</div>
+		</div>
+		<!-- Tab Content -->
+		<div class="tab-content overflow-y-auto">
+			{#if activeTab === 'metadata'}
+				<div class="p-6">
+					{#if selectedRfd.summary}
+						<div class="mb-6">
+							<h3 class="mb-3 text-lg font-semibold">Summary</h3>
+							<div class="rounded-lg bg-gray-50 p-4">
+								<p>{selectedRfd.summary}</p>
+							</div>
+						</div>
+					{/if}
+					<div class="mb-6">
+						<h3 class="mb-3 text-lg font-semibold">Details</h3>
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<div>
+								<div class="mb-3">
+									<div class="mb-1 block text-sm font-medium text-gray-700">Status</div>
+									<div>
+										<span
+											class="inline-block rounded-full px-3 py-1 text-xs font-medium text-white"
+											style="background-color: {getStatusColor(selectedRfd.status)}"
+										>
+											{getStatusLabel(selectedRfd.status)}
+										</span>
+									</div>
+								</div>
+							</div>
+							<div>
+								<div class="mb-3">
+									<div class="mb-1 block text-sm font-medium text-gray-700">Creator</div>
+									<div>
+										<span class="font-medium">{selectedRfd.authorName || 'Unknown'}</span>
+									</div>
+								</div>
+							</div>
+							<div>
+								<div class="mb-3">
+									<div class="mb-1 block text-sm font-medium text-gray-700">Created</div>
+									<div>
+										<span class="text-gray-600">{formatDate(selectedRfd.createdAt)}</span>
+									</div>
+								</div>
+							</div>
+							<div>
+								<div class="mb-3">
+									<div class="mb-1 block text-sm font-medium text-gray-700">Last Updated</div>
+									<div>
+										<span class="text-gray-600">{formatDate(selectedRfd.updatedAt)}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{#if parseTags(selectedRfd.tags).length > 0}
+						<div class="mb-6">
+							<h3 class="mb-3 text-lg font-semibold">Tags</h3>
+							<div class="flex flex-wrap gap-2">
+								{#each parseTags(selectedRfd.tags) as tag}
+									<span
+										class="rounded-full px-2 py-1 text-xs font-medium text-white"
+										style="background-color: {generateTagColor(tag)}"
+									>
+										{tag}
+									</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+			{:else if activeTab === 'document'}
+				<div class="p-6">
+					<div class="mb-4 flex items-center justify-between">
+						<h3 class="text-lg font-semibold">Google Document</h3>
+						<a
+							href={selectedRfd.googleDocUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+						>
+							<span class="mr-2">📄</span>
+							<span>Open in Google Docs</span>
+						</a>
+					</div>
+					<div class="doc-embed overflow-hidden rounded-lg border border-gray-200">
+						<iframe
+							src="{selectedRfd.googleDocUrl}/preview?embedded=true&rm=minimal&widget=true&chrome=false"
+							title="RFD Document Preview"
+							class="doc-iframe"
+							sandbox="allow-scripts allow-same-origin"
+						></iframe>
+					</div>
+				</div>
+			{:else if activeTab === 'pumping'}
+				<div class="p-6">
+					<div class="mb-6">
+						<div class="mb-4 flex items-center justify-between">
+							<h3 class="text-lg font-semibold">Who's Pumping! 🔥</h3>
+							<div class="text-right">
+								<p class="text-sm text-gray-600">
+									{selectedRfd.endorsementCount} pump{selectedRfd.endorsementCount !== 1 ? 's' : ''}
+									total
+								</p>
+							</div>
+						</div>
+						<div class="mb-6">
+							<button
+								class="w-full rounded-lg border-2 border-dashed px-4 py-3 font-medium transition-colors {selectedRfd.userHasEndorsed
+									? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+									: 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'}"
+								onclick={handlePump}
+								disabled={isEndorsing}
+							>
+								<span class="mr-2 text-xl">🔥</span>
+								<span>
+									{#if isEndorsing}
+										Processing...
+									{:else if selectedRfd.userHasEndorsed}
+										You've pumped this RFD! Click to unpump.
+									{:else}
+										Pump this RFD!
+									{/if}
+								</span>
+							</button>
+						</div>
+						{#if selectedRfd.endorsers && selectedRfd.endorsers.length > 0}
+							<div class="space-y-3">
+								{#each selectedRfd.endorsers as endorser}
+									<div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+										{#if endorser.picture}
+											<img
+												src={endorser.picture}
+												alt={endorser.name || 'User'}
+												class="h-10 w-10 rounded-full object-cover"
+											/>
+										{:else}
+											<div
+												class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400 text-sm font-semibold text-white"
+											>
+												{(endorser.name || 'U').charAt(0).toUpperCase()}
+											</div>
+										{/if}
+										<div class="flex-1">
+											<p class="font-medium text-gray-900">{endorser.name || 'Unknown User'}</p>
+											<p class="text-sm text-gray-500">
+												Pumped on {formatDate(endorser.createdAt)}
+											</p>
+										</div>
+										<span class="text-xl">🔥</span>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="py-8 text-center">
+								<div class="mb-3 text-4xl">😭</div>
+								<p class="text-gray-500">No one has pumped this RFD yet.</p>
+								<p class="mt-1 text-sm text-gray-400">Be the first to show your support!</p>
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/if}
 		</div>
 	{:else}
 		<div class="empty-state text-center">
@@ -648,75 +668,64 @@
 	.preview-container {
 		width: 100%;
 		height: 100vh;
-		overflow-y: auto;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
 	}
-
 	/* Mobile modal preview styles */
 	.mobile-modal-preview {
 		border: none !important;
 		height: auto !important;
 		overflow-y: visible !important;
 	}
-
 	.mobile-modal-preview .preview-header {
 		padding: 1rem !important;
 	}
-
 	.mobile-modal-preview .doc-embed {
 		height: 400px !important;
 	}
-
 	/* Mobile responsiveness */
 	@media (max-width: 768px) {
 		.preview-container:not(.mobile-modal-preview) {
 			display: none; /* Hide regular preview on mobile */
 		}
 	}
-
 	.preview-header {
 		border-bottom: 1px solid #e5e7eb;
 		padding: 1.5rem;
 		margin-bottom: 0;
 	}
-
 	.rfd-number {
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		font-weight: 600;
 	}
-
 	.status-tag {
 		text-transform: capitalize;
 		font-weight: 500;
 	}
-
 	.doc-embed {
 		height: 600px;
 		overflow: hidden;
 	}
-
 	/* Mobile preview adjustments */
 	@media (max-width: 768px) {
 		.preview-header {
 			padding: 1rem;
 		}
-
 		.doc-embed {
 			height: 400px; /* Smaller embed height on mobile */
 		}
-
 		.empty-state {
 			min-height: 200px;
 			padding: 2rem;
 		}
 	}
-
 	.doc-iframe {
 		width: 100%;
 		height: 100%;
 		border: none;
 	}
-
 	.empty-state {
 		display: flex;
 		flex-direction: column;
@@ -725,10 +734,44 @@
 		min-height: 400px;
 		padding: 3rem;
 	}
-
 	.empty-icon {
 		margin-bottom: 1.5rem;
 	}
-
+	/* Tab Styles */
+	.tab-navigation {
+		flex-shrink: 0;
+		border-bottom: 1px solid #e5e7eb;
+	}
+	.tab-button {
+		border: none;
+		background: none;
+		cursor: pointer;
+		outline: none;
+		border-bottom: 2px solid transparent;
+		position: relative;
+	}
+	.tab-button:hover {
+		border-bottom-color: #d1d5db;
+	}
+	.tab-content {
+		flex: 1;
+		overflow-y: auto;
+		height: calc(100vh - 200px); /* Account for header and tabs */
+	}
+	/* Mobile tab adjustments */
+	@media (max-width: 768px) {
+		.tab-navigation .flex {
+			overflow-x: auto;
+			white-space: nowrap;
+		}
+		.tab-button {
+			min-width: 120px;
+			padding: 0.5rem 1rem;
+			font-size: 0.875rem;
+		}
+		.tab-content {
+			height: calc(100vh - 180px);
+		}
+	}
 	/* Responsive adjustments handled by Tailwind classes */
 </style>

@@ -16,8 +16,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}
 
 		const { session, user } = await lucia.validateSession(sessionId);
-		if (!session) {
-			return json({ error: 'Invalid session' }, { status: 401 });
+		if (!session || !user) {
+			return json({ error: 'Invalid session or user' }, { status: 401 });
 		}
 
 		// For templates, we can use either service account or user access

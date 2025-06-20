@@ -5,19 +5,15 @@ import { rfd, user as userTable, rfdStatusHistory } from '$lib/server/db/schema'
 import { lucia } from '$lib/server/auth';
 import { eq } from 'drizzle-orm';
 import { generateId } from 'lucia';
+import { 
+	getRfdWithEndorsements, 
+	canUserEditRfd, 
+	canUserChangeStatus, 
+	isValidRfdStatus,
+	type RfdStatus 
+} from '$lib/server/rfd-service';
 
-const VALID_STATUSES = [
-	'draft',
-	'open_for_review',
-	'accepted',
-	'enforced',
-	'rejected',
-	'retracted'
-] as const;
-
-type RfdStatus = (typeof VALID_STATUSES)[number];
-
-export const PUT: RequestHandler = async ({ request, cookies }) => {
+export const GET: RequestHandler = async ({ params, cookies }) => {
 	try {
 		// Check authentication
 		const sessionId = cookies.get(lucia.sessionCookieName);
@@ -26,11 +22,47 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		const { session, user } = await lucia.validateSession(sessionId);
-		if (!session) {
-			return json({ error: 'Invalid session' }, { status: 401 });
+		if (!session || !user) {
+			return json({ error: 'Invalid session or user' }, { status: 401 });
 		}
 
-		// Get user info including role
+		const rfdId = params.id;
+		if (!rfdId) {
+			return json({ error: 'RFD ID is required' }, { status: 400 });
+		}
+
+		// Get RFD data with endorsements
+		const rfdData = await getRfdWithEndorsements(rfdId, user.id);
+		if (!rfdData) {
+			return json({ error: 'RFD not found' }, { status: 404 });
+		}
+
+		return json({ rfd: rfdData });
+	} catch (error) {
+		console.error('Error fetching RFD:', error);
+		return json({ error: 'Failed to fetch RFD' }, { status: 500 });
+	}
+};
+
+export const PUT: RequestHandler = async ({ params, request, cookies }) => {
+	try {
+		// Check authentication
+		const sessionId = cookies.get(lucia.sessionCookieName);
+		if (!sessionId) {
+			return json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		const { session, user } = await lucia.validateSession(sessionId);
+		if (!session || !user) {
+			return json({ error: 'Invalid session or user' }, { status: 401 });
+		}
+
+		const rfdId = params.id;
+		if (!rfdId) {
+			return json({ error: 'RFD ID is required' }, { status: 400 });
+		}
+
+		// Get user role
 		const [dbUser] = await db
 			.select({ role: userTable.role })
 			.from(userTable)
@@ -43,11 +75,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 
 		// Parse request body
 		const body = await request.json();
-		const { rfdId, status, title, summary, comment, tags } = body;
-
-		if (!rfdId) {
-			return json({ error: 'RFD ID is required' }, { status: 400 });
-		}
+		const { title, summary, status, tags, comment } = body;
 
 		// Check if RFD exists and get current values
 		const [existingRfd] = await db
@@ -67,22 +95,18 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			return json({ error: 'RFD not found' }, { status: 404 });
 		}
 
-		// Check permissions
-		const isAdmin = dbUser.role === 'admin';
-		const isOwner = user.id === existingRfd.authorId;
-
 		// Validate status if provided
-		if (status && !VALID_STATUSES.includes(status as RfdStatus)) {
+		if (status && !isValidRfdStatus(status)) {
 			return json({ error: 'Invalid status' }, { status: 400 });
 		}
 
 		// Check permissions for status changes
-		if (status && status !== existingRfd.status && !isAdmin) {
+		if (status && status !== existingRfd.status && !canUserChangeStatus(dbUser.role)) {
 			return json({ error: 'Only administrators can change RFD status' }, { status: 403 });
 		}
 
 		// Check permissions for other changes
-		if ((title || summary !== undefined || tags !== undefined) && !isOwner && !isAdmin) {
+		if ((title || summary !== undefined || tags !== undefined) && !canUserEditRfd(user.id, dbUser.role, existingRfd.authorId)) {
 			return json(
 				{ error: 'Only the RFD owner or administrator can edit RFD details' },
 				{ status: 403 }
@@ -141,30 +165,8 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			});
 		}
 
-		// Get updated RFD with author info
-		const [updatedRfd] = await db
-			.select({
-				id: rfd.id,
-				rfdNumber: rfd.rfdNumber,
-				title: rfd.title,
-				summary: rfd.summary,
-				status: rfd.status,
-				authorId: rfd.authorId,
-				authorName: userTable.name,
-				authorEmail: userTable.email,
-				googleDocId: rfd.googleDocId,
-				googleDocUrl: rfd.googleDocUrl,
-				tags: rfd.tags,
-				version: rfd.version,
-				isActive: rfd.isActive,
-				createdAt: rfd.createdAt,
-				updatedAt: rfd.updatedAt,
-				lastSyncedAt: rfd.lastSyncedAt
-			})
-			.from(rfd)
-			.leftJoin(userTable, eq(rfd.authorId, userTable.id))
-			.where(eq(rfd.id, rfdId))
-			.limit(1);
+		// Get updated RFD data with endorsements
+		const updatedRfd = await getRfdWithEndorsements(rfdId, user.id);
 
 		return json({
 			message: 'RFD updated successfully',

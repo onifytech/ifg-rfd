@@ -97,10 +97,29 @@
 			selectedRfd = updatedRfd;
 		}
 	}
+
+	async function handleRfdCreated() {
+		// Refresh the RFD list after creation
+		try {
+			const response = await fetch('/api/rfd');
+			if (response.ok) {
+				const data = await response.json();
+				rfds = data.rfds;
+			}
+		} catch (error) {
+			console.error('Error refreshing RFD list:', error);
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>{data.targetRfdNumber && data.targetRfd ? `RFD ${data.targetRfdNumber}: ${data.targetRfd.title}` : data.targetRfdNumber && data.rfdNotFound ? `RFD ${data.targetRfdNumber} Not Found` : 'RFD Index'}</title>
+	<title
+		>{data.targetRfdNumber && data.targetRfd
+			? `RFD ${data.targetRfdNumber}: ${data.targetRfd.title}`
+			: data.targetRfdNumber && data.rfdNotFound
+				? `RFD ${data.targetRfdNumber} Not Found`
+				: 'RFD Index'}</title
+	>
 	<meta name="description" content="RFD Index and Management System" />
 </svelte:head>
 
@@ -116,22 +135,37 @@
 
 <!-- Show RFD not found message if applicable -->
 {#if data.rfdNotFound}
-	<div class="flex items-center justify-center min-h-screen bg-gray-50">
-		<div class="text-center max-w-md mx-auto px-6">
+	<div class="flex min-h-screen items-center justify-center bg-gray-50">
+		<div class="mx-auto max-w-md px-6 text-center">
 			<div class="mb-6">
-				<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+				<svg
+					class="mx-auto h-12 w-12 text-gray-400"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+					/>
 				</svg>
 			</div>
-			<h1 class="text-2xl font-bold text-gray-900 mb-4">RFD {data.targetRfdNumber} Not Found</h1>
-			<p class="text-gray-600 mb-8">The requested RFD number does not exist or could not be loaded.</p>
+			<h1 class="mb-4 text-2xl font-bold text-gray-900">RFD {data.targetRfdNumber} Not Found</h1>
+			<p class="mb-8 text-gray-600">
+				The requested RFD number does not exist or could not be loaded.
+			</p>
 			<div class="space-y-3">
-				<a href="/" class="block w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+				<a
+					href="/"
+					class="block w-full rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+				>
 					View All RFDs
 				</a>
-				<button 
+				<button
 					onclick={openCreateModal}
-					class="block w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors"
+					class="block w-full rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
 				>
 					Create New RFD
 				</button>
@@ -154,7 +188,7 @@
 				<h2 class="modal-title">Create New RFD</h2>
 			</div>
 			<div class="modal-body">
-				<CreateRFD onClose={closeCreateModal} />
+				<CreateRFD onClose={closeCreateModal} onRfdCreated={handleRfdCreated} />
 			</div>
 		</div>
 	</div>

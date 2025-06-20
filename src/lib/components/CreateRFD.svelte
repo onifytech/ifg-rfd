@@ -2,9 +2,10 @@
 	import { onMount } from 'svelte';
 	interface CreateRFDProps {
 		onClose: () => void;
+		onRfdCreated?: () => void;
 	}
 
-	const { onClose }: CreateRFDProps = $props();
+	const { onClose, onRfdCreated }: CreateRFDProps = $props();
 
 	interface Template {
 		id: string;
@@ -17,12 +18,19 @@
 	let selectedTemplate = $state('');
 	let title = $state('');
 	let description = $state('');
-	let tags = $state('');
+	let tags: string[] = $state([]);
+	let tagInput = $state('');
+	let availableTags: string[] = $state([]);
+	let showTagDropdown = $state(false);
+	let filteredTags = $derived(availableTags.filter(
+		(tag) => tag.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(tag)
+	));
 	let isLoading = $state(false);
 	let error = $state('');
 
 	onMount(async () => {
 		await loadTemplates();
+		await loadAvailableTags();
 	});
 
 	async function loadTemplates() {
@@ -65,9 +73,6 @@
 					title: title.trim(),
 					description: description.trim(),
 					tags: tags
-						.split(',')
-						.map((tag) => tag.trim())
-						.filter((tag) => tag)
 				})
 			});
 
@@ -75,6 +80,10 @@
 				const data = await response.json();
 				// Redirect to the Google Doc
 				window.open(data.googleDocUrl, '_blank');
+				// Notify parent component about the new RFD
+				if (onRfdCreated) {
+					onRfdCreated();
+				}
 				// Reset form
 				resetForm();
 			} else {
@@ -92,9 +101,79 @@
 	function resetForm() {
 		title = '';
 		description = '';
-		tags = '';
+		tags = [];
+		tagInput = '';
+		showTagDropdown = false;
 		selectedTemplate = '';
 		onClose();
+	}
+
+	async function loadAvailableTags() {
+		try {
+			const response = await fetch('/api/rfd/tags');
+			if (response.ok) {
+				const data = await response.json();
+				availableTags = data.tags || [];
+			}
+		} catch (error) {
+			console.error('Error loading tags:', error);
+		}
+	}
+
+	function generateTagColor(tag: string): string {
+		// Generate a consistent color based on the tag name
+		let hash = 0;
+		for (let i = 0; i < tag.length; i++) {
+			hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		const colors = [
+			'#ef4444',
+			'#f59e0b',
+			'#eab308',
+			'#22c55e',
+			'#10b981',
+			'#06b6d4',
+			'#3b82f6',
+			'#6366f1',
+			'#8b5cf6',
+			'#a855f7',
+			'#ec4899',
+			'#f43f5e',
+			'#64748b',
+			'#6b7280',
+			'#374151'
+		];
+		return colors[Math.abs(hash) % colors.length];
+	}
+
+	function addTag(tag: string) {
+		const trimmedTag = tag.trim();
+		if (trimmedTag && !tags.includes(trimmedTag)) {
+			tags = [...tags, trimmedTag];
+		}
+		tagInput = '';
+		showTagDropdown = false;
+	}
+
+	function removeTag(tagToRemove: string) {
+		tags = tags.filter((tag) => tag !== tagToRemove);
+	}
+
+	function handleTagInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		tagInput = target.value;
+		showTagDropdown = tagInput.length > 0;
+		// Add tag on Enter or comma
+		if (event instanceof KeyboardEvent) {
+			if (event.key === 'Enter' || event.key === ',') {
+				event.preventDefault();
+				if (tagInput.trim()) {
+					addTag(tagInput);
+				}
+			} else if (event.key === 'Escape') {
+				showTagDropdown = false;
+			}
+		}
 	}
 </script>
 
@@ -223,13 +302,51 @@
 				</svg>
 				Tags
 			</label>
-			<input
-				type="text"
-				id="tags"
-				bind:value={tags}
-				placeholder="architecture, api, security, frontend (comma-separated)"
-				class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-			/>
+			<div class="relative">
+				<div class="mb-2 flex flex-wrap gap-2">
+					{#each tags as tag}
+						<span
+							class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white"
+							style="background-color: {generateTagColor(tag)}"
+						>
+							{tag}
+							<button
+								type="button"
+								onclick={() => removeTag(tag)}
+								class="ml-1 text-white hover:text-gray-200"
+							>
+								×
+							</button>
+						</span>
+					{/each}
+				</div>
+				<input
+					type="text"
+					id="tags"
+					bind:value={tagInput}
+					oninput={handleTagInput}
+					onkeydown={handleTagInput}
+					onblur={() => setTimeout(() => (showTagDropdown = false), 150)}
+					onfocus={() => (showTagDropdown = tagInput.length > 0)}
+					placeholder="Add tags (press Enter or comma to add)"
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+				/>
+				{#if showTagDropdown && filteredTags.length > 0}
+					<div
+						class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg"
+					>
+						{#each filteredTags.slice(0, 10) as tag}
+							<button
+								type="button"
+								class="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+								onclick={() => addTag(tag)}
+							>
+								{tag}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
 			<p class="mt-2 flex items-center text-sm text-gray-500">
 				<svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
 					<path
@@ -238,7 +355,7 @@
 						clip-rule="evenodd"
 					/>
 				</svg>
-				Separate tags with commas
+				Press Enter or comma to add tags. Click × to remove.
 			</p>
 		</div>
 

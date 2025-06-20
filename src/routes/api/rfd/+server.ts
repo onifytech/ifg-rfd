@@ -4,7 +4,7 @@ import { GoogleDriveService } from '$lib/server/google-drive';
 import { db } from '$lib/server/db';
 import { rfd, user as userTable, rfdEndorsement } from '$lib/server/db/schema';
 import { lucia } from '$lib/server/auth';
-import { eq, count, max, and } from 'drizzle-orm';
+import { eq, count, max } from 'drizzle-orm';
 import { generateId } from 'lucia';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -16,8 +16,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		const { session, user } = await lucia.validateSession(sessionId);
-		if (!session) {
-			return json({ error: 'Invalid session' }, { status: 401 });
+		if (!session || !user) {
+			return json({ error: 'Invalid session or user' }, { status: 401 });
 		}
 
 		// Parse request body
@@ -85,8 +85,8 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		}
 
 		const { session, user } = await lucia.validateSession(sessionId);
-		if (!session) {
-			return json({ error: 'Invalid session' }, { status: 401 });
+		if (!session || !user) {
+			return json({ error: 'Invalid session or user' }, { status: 401 });
 		}
 
 		// Get query parameters
@@ -181,67 +181,4 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	}
 };
 
-export const PUT: RequestHandler = async ({ request, cookies }) => {
-	try {
-		// Check authentication
-		const sessionId = cookies.get(lucia.sessionCookieName);
-		if (!sessionId) {
-			return json({ error: 'Unauthorized' }, { status: 401 });
-		}
 
-		const { session, user } = await lucia.validateSession(sessionId);
-		if (!session) {
-			return json({ error: 'Invalid session' }, { status: 401 });
-		}
-
-		// Parse request body
-		const body = await request.json();
-		const { rfdId, action } = body;
-
-		if (!rfdId || !action || !['pump', 'unpump'].includes(action)) {
-			return json(
-				{ error: 'Invalid request. Need rfdId and action (pump/unpump)' },
-				{ status: 400 }
-			);
-		}
-
-		// Check if RFD exists
-		const [rfdExists] = await db.select().from(rfd).where(eq(rfd.id, rfdId)).limit(1);
-		if (!rfdExists) {
-			return json({ error: 'RFD not found' }, { status: 404 });
-		}
-
-		if (action === 'pump') {
-			// Check if user already pumped this RFD
-			const [existingEndorsement] = await db
-				.select()
-				.from(rfdEndorsement)
-				.where(and(eq(rfdEndorsement.rfdId, rfdId), eq(rfdEndorsement.userId, user.id)))
-				.limit(1);
-
-			if (existingEndorsement) {
-				return json({ error: 'You have already pumped this RFD' }, { status: 400 });
-			}
-
-			// Create pump
-			const endorsementId = generateId(15);
-			await db.insert(rfdEndorsement).values({
-				id: endorsementId,
-				rfdId,
-				userId: user.id
-			});
-
-			return json({ message: 'RFD pumped successfully' });
-		} else {
-			// Remove pump
-			await db
-				.delete(rfdEndorsement)
-				.where(and(eq(rfdEndorsement.rfdId, rfdId), eq(rfdEndorsement.userId, user.id)));
-
-			return json({ message: 'Pump removed successfully' });
-		}
-	} catch (error) {
-		console.error('Error handling endorsement:', error);
-		return json({ error: 'Failed to handle endorsement' }, { status: 500 });
-	}
-};

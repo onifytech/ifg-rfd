@@ -1,17 +1,10 @@
 <script lang="ts">
+	import { getStatusLabel, statusOptions } from '$lib/utils/statusUtils.js';
+
 	export let rfdId: string;
 	export let currentStatus: string;
 	export let currentTitle: string;
 	export let onUpdate: (updatedRfd: any) => void;
-
-	const statusOptions = [
-		{ value: 'draft', label: 'Draft' },
-		{ value: 'open_for_review', label: 'Open for Review' },
-		{ value: 'accepted', label: 'Accepted' },
-		{ value: 'enforced', label: 'Enforced' },
-		{ value: 'rejected', label: 'Rejected' },
-		{ value: 'retracted', label: 'Retracted' }
-	];
 
 	let isEditing = false;
 	let isLoading = false;
@@ -77,11 +70,6 @@
 		} finally {
 			isLoading = false;
 		}
-	}
-
-	function getStatusLabel(status: string): string {
-		const option = statusOptions.find((opt) => opt.value === status);
-		return option ? option.label : status;
 	}
 </script>
 
