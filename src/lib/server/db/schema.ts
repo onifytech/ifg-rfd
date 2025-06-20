@@ -5,6 +5,7 @@ export const user = pgTable('user', {
 	googleId: text('google_id').unique().notNull(),
 	email: text('email').notNull(),
 	name: text('name').notNull(),
+	role: text('role').notNull().default('user'), // user, admin
 	picture: text('picture'),
 	avatarBase64: text('avatar_base64'), // Store base64 encoded avatar
 	avatarUpdatedAt: timestamp('avatar_updated_at'), // Track when avatar was last synced
@@ -31,7 +32,7 @@ export const rfd = pgTable('rfd', {
 	rfdNumber: integer('rfd_number').unique().notNull(),
 	title: text('title').notNull(),
 	summary: text('summary'),
-	status: text('status').notNull().default('draft'), // draft, review, approved, rejected, archived
+	status: text('status').notNull().default('draft'), // draft, open_for_review, accepted, enforced, rejected, retracted
 	authorId: text('author_id')
 		.notNull()
 		.references(() => user.id),
@@ -93,16 +94,20 @@ export const rfdTagRelation = pgTable('rfd_tag_relation', {
 	createdAt: timestamp('created_at').defaultNow().notNull()
 });
 
-export const rfdEndorsement = pgTable('rfd_endorsement', {
-	id: text('id').primaryKey(),
-	rfdId: text('rfd_id')
-		.notNull()
-		.references(() => rfd.id),
-	userId: text('user_id')
-		.notNull()
-		.references(() => user.id),
-	createdAt: timestamp('created_at').defaultNow().notNull()
-}, (table) => ({
-	// Ensure one endorsement per user per RFD
-	uniqueUserRfd: unique().on(table.rfdId, table.userId)
-}));
+export const rfdEndorsement = pgTable(
+	'rfd_endorsement',
+	{
+		id: text('id').primaryKey(),
+		rfdId: text('rfd_id')
+			.notNull()
+			.references(() => rfd.id),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id),
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => ({
+		// Ensure one endorsement per user per RFD
+		uniqueUserRfd: unique().on(table.rfdId, table.userId)
+	})
+);

@@ -42,16 +42,16 @@ export async function downloadImageAsBase64(imageUrl: string): Promise<AvatarSyn
 
 		const arrayBuffer = await response.arrayBuffer();
 		const base64 = Buffer.from(arrayBuffer).toString('base64');
-		
+
 		// Create data URL with proper MIME type
 		const dataUrl = `data:${contentType};base64,${base64}`;
 
 		return { success: true, base64: dataUrl };
 	} catch (error) {
 		console.error('Error downloading avatar:', error);
-		return { 
-			success: false, 
-			error: error instanceof Error ? error.message : 'Unknown error' 
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error'
 		};
 	}
 }
@@ -61,10 +61,10 @@ export async function downloadImageAsBase64(imageUrl: string): Promise<AvatarSyn
  */
 export function shouldUpdateAvatar(avatarUpdatedAt: Date | null): boolean {
 	if (!avatarUpdatedAt) return true;
-	
+
 	const sevenDaysAgo = new Date();
 	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-	
+
 	return avatarUpdatedAt < sevenDaysAgo;
 }
 

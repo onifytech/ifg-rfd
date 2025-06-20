@@ -3,18 +3,14 @@ import { generateCodeVerifier, generateState } from 'arctic';
 import { google } from '$lib/server/auth';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ cookies }) => {
+export const GET: RequestHandler = async ({ cookies, url }) => {
 	const state = generateState();
 	const codeVerifier = generateCodeVerifier();
-	const url = google.createAuthorizationURL(state, codeVerifier, [
-		'profile',
-		'email',
-		'https://www.googleapis.com/auth/drive',
-		'https://www.googleapis.com/auth/documents'
-	]);
-	
-	url.searchParams.set('access_type', 'offline');
-	url.searchParams.set('prompt', 'consent');
+	const authUrl = google.createAuthorizationURL(state, codeVerifier, ['profile', 'email']);
+	const redirectParam = url.searchParams.get('redirect');
+
+	authUrl.searchParams.set('access_type', 'offline');
+	authUrl.searchParams.set('prompt', 'consent');
 
 	cookies.set('google_oauth_state', state, {
 		path: '/',
@@ -32,5 +28,15 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		sameSite: 'lax'
 	});
 
-	throw redirect(302, url.toString());
+	if (redirectParam) {
+		cookies.set('google_redirect_url', redirectParam, {
+			path: '/',
+			secure: true,
+			httpOnly: true,
+			maxAge: 60 * 10,
+			sameSite: 'lax'
+		});
+	}
+
+	throw redirect(302, authUrl.toString());
 };

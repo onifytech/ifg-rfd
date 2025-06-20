@@ -38,13 +38,15 @@
 		switch (status) {
 			case 'draft':
 				return '#94a3b8';
-			case 'review':
+			case 'open_for_review':
 				return '#f59e0b';
-			case 'approved':
+			case 'accepted':
 				return '#10b981';
+			case 'enforced':
+				return '#059669';
 			case 'rejected':
 				return '#ef4444';
-			case 'archived':
+			case 'retracted':
 				return '#6b7280';
 			default:
 				return '#94a3b8';
@@ -60,12 +62,59 @@
 		}
 	}
 
+	function generateTagColor(tag: string): string {
+		// Generate a consistent color based on the tag name
+		let hash = 0;
+		for (let i = 0; i < tag.length; i++) {
+			hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+		}
+
+		const colors = [
+			'#ef4444',
+			'#f59e0b',
+			'#eab308',
+			'#22c55e',
+			'#10b981',
+			'#06b6d4',
+			'#3b82f6',
+			'#6366f1',
+			'#8b5cf6',
+			'#a855f7',
+			'#ec4899',
+			'#f43f5e',
+			'#64748b',
+			'#6b7280',
+			'#374151'
+		];
+
+		return colors[Math.abs(hash) % colors.length];
+	}
+
 	function handleRfdClick(rfd: RFD) {
 		onRfdSelect(rfd);
 	}
 
 	function formatRfdNumber(rfdNumber: number): string {
 		return `RFD-${rfdNumber.toString().padStart(3, '0')}`;
+	}
+
+	function getStatusLabel(status: string): string {
+		switch (status) {
+			case 'draft':
+				return 'Draft';
+			case 'open_for_review':
+				return 'Open for Review';
+			case 'accepted':
+				return 'Accepted';
+			case 'enforced':
+				return 'Enforced';
+			case 'rejected':
+				return 'Rejected';
+			case 'retracted':
+				return 'Retracted';
+			default:
+				return status;
+		}
 	}
 </script>
 
@@ -109,9 +158,11 @@
 								Open in Google Docs
 							</a>
 						</div>
-						<span class="status-badge" style="background-color: {getStatusColor(rfd.status)};">
-							{rfd.status}
-						</span>
+						<div class="status-section">
+							<span class="status-badge" style="background-color: {getStatusColor(rfd.status)};">
+								{getStatusLabel(rfd.status)}
+							</span>
+						</div>
 					</div>
 
 					{#if rfd.summary}
@@ -161,7 +212,7 @@
 					{#if parseTags(rfd.tags).length > 0}
 						<div class="tags">
 							{#each parseTags(rfd.tags) as tag}
-								<span class="tag">{tag}</span>
+								<span class="tag" style="background-color: {generateTagColor(tag)}">{tag}</span>
 							{/each}
 						</div>
 					{/if}
@@ -339,15 +390,18 @@
 		text-decoration: underline;
 	}
 
+	.status-section {
+		margin-left: 12px;
+		min-width: 120px;
+	}
+
 	.status-badge {
 		padding: 4px 8px;
 		border-radius: 12px;
 		font-size: 12px;
 		font-weight: 500;
 		color: white;
-		text-transform: capitalize;
 		white-space: nowrap;
-		margin-left: 12px;
 	}
 
 	.summary {
@@ -428,10 +482,9 @@
 	}
 
 	.tag {
-		background-color: #f3f4f6;
-		color: #374151;
+		color: white;
 		padding: 2px 8px;
-		border-radius: 4px;
+		border-radius: 12px;
 		font-size: 12px;
 		font-weight: 500;
 	}

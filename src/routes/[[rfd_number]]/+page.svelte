@@ -5,6 +5,7 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import type { PageData } from './$types';
+	import { onMount } from 'svelte';
 
 	export let data: PageData;
 
@@ -35,6 +36,14 @@
 	let showCreateModal = false;
 	let mobileNavOpen = false;
 	let showMobilePreview = false;
+	let rfds = data.rfds;
+
+	// Auto-select RFD if targetRfd is provided
+	onMount(() => {
+		if (data.targetRfd) {
+			selectedRfd = data.targetRfd;
+		}
+	});
 
 	function handleRfdSelect(rfd: RFD) {
 		selectedRfd = rfd;
@@ -78,11 +87,21 @@
 			closeMobilePreview();
 		}
 	}
+
+	function handleRfdUpdate(updatedRfd: RFD) {
+		// Update the RFD in the list
+		rfds = rfds.map((rfd: RFD) => (rfd.id === updatedRfd.id ? updatedRfd : rfd));
+
+		// Update selected RFD if it's the one that was updated
+		if (selectedRfd?.id === updatedRfd.id) {
+			selectedRfd = updatedRfd;
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>{data.targetRfdNumber && data.targetRfd ? `RFD ${data.targetRfdNumber}: ${data.targetRfd.title}` : data.targetRfdNumber && data.rfdNotFound ? `RFD ${data.targetRfdNumber} Not Found` : 'RFD Index'}</title>
+	<meta name="description" content="RFD Index and Management System" />
 </svelte:head>
 
 <svelte:window on:resize={handleResize} />
@@ -95,11 +114,37 @@
 	onOpenCreateModal={openCreateModal}
 />
 
-<section>
-	<Sidebar user={data.user} onOpenCreateModal={openCreateModal} />
-	<List rfds={data.rfds} onRfdSelect={handleRfdSelect} {selectedRfd} />
-	<Preview {selectedRfd} />
-</section>
+<!-- Show RFD not found message if applicable -->
+{#if data.rfdNotFound}
+	<div class="flex items-center justify-center min-h-screen bg-gray-50">
+		<div class="text-center max-w-md mx-auto px-6">
+			<div class="mb-6">
+				<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+				</svg>
+			</div>
+			<h1 class="text-2xl font-bold text-gray-900 mb-4">RFD {data.targetRfdNumber} Not Found</h1>
+			<p class="text-gray-600 mb-8">The requested RFD number does not exist or could not be loaded.</p>
+			<div class="space-y-3">
+				<a href="/" class="block w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+					View All RFDs
+				</a>
+				<button 
+					onclick={openCreateModal}
+					class="block w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors"
+				>
+					Create New RFD
+				</button>
+			</div>
+		</div>
+	</div>
+{:else}
+	<section>
+		<Sidebar user={data.user} onOpenCreateModal={openCreateModal} />
+		<List {rfds} onRfdSelect={handleRfdSelect} {selectedRfd} />
+		<Preview {selectedRfd} user={data.user} onRfdUpdate={handleRfdUpdate} />
+	</section>
+{/if}
 
 <!-- Create RFD Modal -->
 {#if showCreateModal}
@@ -130,7 +175,12 @@
 				</button>
 			</div>
 			<div class="mobile-preview-body">
-				<Preview {selectedRfd} isMobileModal={true} />
+				<Preview
+					{selectedRfd}
+					isMobileModal={true}
+					user={data.user}
+					onRfdUpdate={handleRfdUpdate}
+				/>
 			</div>
 		</div>
 	</div>

@@ -12,6 +12,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	const state = url.searchParams.get('state');
 	const storedState = cookies.get('google_oauth_state') ?? null;
 	const codeVerifier = cookies.get('google_code_verifier') ?? null;
+	const redirectUrl = cookies.get('google_redirect_url') ?? null;
 
 	if (!code || !state || !storedState || state !== storedState || !codeVerifier) {
 		return new Response(null, {
@@ -114,10 +115,16 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				...sessionCookie.attributes
 			});
 		}
+
+		// Clean up redirect cookie and redirect to the intended page
+		if (redirectUrl) {
+			cookies.delete('google_redirect_url', { path: '/' });
+		}
+
 		return new Response(null, {
 			status: 302,
 			headers: {
-				Location: '/'
+				Location: redirectUrl || '/'
 			}
 		});
 	} catch (e) {

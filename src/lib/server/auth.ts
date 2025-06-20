@@ -19,6 +19,7 @@ export const lucia = new Lucia(adapter, {
 			googleId: attributes.googleId,
 			email: attributes.email,
 			name: attributes.name,
+			role: attributes.role,
 			picture: attributes.picture,
 			avatarBase64: attributes.avatarBase64
 		};
@@ -38,6 +39,7 @@ declare module 'lucia' {
 			googleId: string;
 			email: string;
 			name: string;
+			role: string;
 			picture: string | null;
 			avatarBase64: string | null;
 		};

@@ -98,13 +98,9 @@
 	}
 </script>
 
-<div
-	class="mobile-form rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
->
+<div class="mobile-form rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 	{#if error}
-		<div
-			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700"
-		>
+		<div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
 			<div class="flex items-center">
 				<svg class="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
 					<path
@@ -119,11 +115,7 @@
 	{/if}
 
 	<div class="mb-6">
-		<h2
-			class="mb-2 text-xl font-bold text-gray-800"
-		>
-			Create New RFD
-		</h2>
+		<h2 class="mb-2 text-xl font-bold text-gray-800">Create New RFD</h2>
 		<p class="text-gray-600">Start a new Request for Discussion using a template</p>
 	</div>
 
@@ -148,7 +140,7 @@
 			<select
 				id="template"
 				bind:value={selectedTemplate}
-				class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 transition-colors hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+				class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 transition-colors hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 				required
 			>
 				<option value="">
@@ -193,7 +185,7 @@
 				id="title"
 				bind:value={title}
 				placeholder="Brief, descriptive title for your RFD"
-				class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+				class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 				required
 			/>
 		</div>
@@ -215,7 +207,7 @@
 				bind:value={description}
 				placeholder="Brief description of what this RFD discusses"
 				rows="4"
-				class="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+				class="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 			></textarea>
 		</div>
 
@@ -236,7 +228,7 @@
 				id="tags"
 				bind:value={tags}
 				placeholder="architecture, api, security, frontend (comma-separated)"
-				class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+				class="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 placeholder-gray-400 transition-colors hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 			/>
 			<p class="mt-2 flex items-center text-sm text-gray-500">
 				<svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
@@ -255,7 +247,7 @@
 			<button
 				type="button"
 				onclick={resetForm}
-				class="rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-400"
+				class="rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:border-gray-400 hover:bg-gray-50"
 			>
 				<svg class="mr-2 inline h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
 					<path
@@ -269,7 +261,7 @@
 			<button
 				type="submit"
 				disabled={isLoading || !selectedTemplate || !title.trim()}
-				class="rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+				class="rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
 			>
 				{#if isLoading}
 					<svg class="mr-2 inline h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
