@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getStatusColor, getStatusLabel, statusOptions } from '$lib/utils/statusUtils.js';
+	import { toast } from '$lib/stores/toast.js';
 	type User = {
 		id: string;
 		name: string;
@@ -87,13 +88,16 @@
 				if (onRfdUpdate) {
 					onRfdUpdate(result.rfd);
 				}
+				// Show success toast
+				const message = action === 'pump' ? 'RFD pumped! 🔥' : 'Pump removed';
+				toast.success(message);
 			} else {
 				const errorData = await response.json();
-				alert(errorData.error || 'Failed to update pump');
+				toast.error(errorData.error || 'Failed to update pump');
 			}
 		} catch (error) {
 			console.error('Pump error:', error);
-			alert('Failed to update pump');
+			toast.error('Failed to update pump');
 		} finally {
 			isEndorsing = false;
 		}
@@ -106,8 +110,7 @@
 
 		try {
 			await navigator.clipboard.writeText(url);
-			// You could add a toast notification here in the future
-			console.log('Link copied to clipboard');
+			toast.success('Link copied to clipboard!');
 		} catch (error) {
 			console.error('Failed to copy link:', error);
 			// Fallback for older browsers
@@ -118,10 +121,10 @@
 			textArea.select();
 			try {
 				document.execCommand('copy');
-				console.log('Link copied to clipboard (fallback)');
+				toast.success('Link copied to clipboard!');
 			} catch (fallbackError) {
 				console.error('Fallback copy failed:', fallbackError);
-				alert('Failed to copy link. Please copy manually: ' + url);
+				toast.error('Failed to copy link. Please copy manually: ' + url);
 			}
 			document.body.removeChild(textArea);
 		}
@@ -270,6 +273,7 @@
 			if (onRfdUpdate) {
 				onRfdUpdate(result.rfd);
 			}
+			toast.success('RFD updated successfully!');
 			isEditing = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
