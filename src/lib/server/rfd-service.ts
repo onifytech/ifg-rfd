@@ -129,6 +129,18 @@ export function canUserChangeStatus(userRole: string): boolean {
 }
 
 /**
+ * Check if user can change RFD status from draft (publish)
+ */
+export function canUserPublishDraft(userId: string, userRole: string, rfdAuthorId: string, currentStatus: string): boolean {
+	// Only the creator can publish their own draft RFD
+	if (currentStatus === 'draft') {
+		return userId === rfdAuthorId;
+	}
+	// For non-draft RFDs, only admins can change status
+	return userRole === 'admin';
+}
+
+/**
  * Validate RFD status
  */
 export function isValidRfdStatus(status: string): status is RfdStatus {
