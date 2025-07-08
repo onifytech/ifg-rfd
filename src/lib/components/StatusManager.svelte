@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getStatusLabel, statusOptions } from '$lib/utils/statusUtils.js';
+	import { getStatusLabel, statusOptions } from '$lib/utils/statusUtils';
 
 	export let rfdId: string;
 	export let currentStatus: string;

@@ -143,14 +143,41 @@
 	}
 
 	.nav-link-active {
-		background-color: #3b82f6 !important;
 		color: white !important;
 		font-weight: 600;
 	}
 
 	.nav-link-active:hover {
-		background-color: #2563eb !important;
 		color: white !important;
+	}
+
+	.status-draft.nav-link-active {
+		background-color: #94a3b8 !important;
+	}
+
+	.status-review.nav-link-active {
+		background-color: #f59e0b !important;
+	}
+
+	.status-approved.nav-link-active {
+		background-color: #10b981 !important;
+	}
+
+	.status-enforced.nav-link-active {
+		background-color: #059669 !important;
+	}
+
+	.status-rejected.nav-link-active {
+		background-color: #ef4444 !important;
+	}
+
+	.status-archived.nav-link-active {
+		background-color: #6b7280 !important;
+	}
+
+	/* Fallback for non-status filters */
+	.nav-link-active:not([class*="status-"]) {
+		background-color: #3b82f6 !important;
 	}
 
 	.status-draft {
