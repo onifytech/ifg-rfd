@@ -4,7 +4,7 @@ import { GoogleDriveService } from '$lib/server/google-drive';
 import { db } from '$lib/server/db';
 import { rfd, user as userTable, rfdEndorsement } from '$lib/server/db/schema';
 import { lucia } from '$lib/server/auth';
-import { eq, count, max } from 'drizzle-orm';
+import { eq, count, max, or, ne, and } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
@@ -96,7 +96,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		// Add filters if provided
 		// Note: This is a simplified example. You'd want to use proper query building
 
-		// Get all RFDs with author information
+		// Get RFDs with privacy filtering:
+		// - Show all non-draft RFDs to everyone
+		// - Show draft RFDs only to their creators
 		const allRfds = await db
 			.select({
 				id: rfd.id,
@@ -118,7 +120,15 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			})
 			.from(rfd)
 			.leftJoin(userTable, eq(rfd.authorId, userTable.id))
-			.where(eq(rfd.isActive, true))
+			.where(
+				and(
+					eq(rfd.isActive, true),
+					or(
+						ne(rfd.status, 'draft'), // Show all non-draft RFDs
+						eq(rfd.authorId, user.id) // Show draft RFDs only to their creators
+					)
+				)
+			)
 			.orderBy(rfd.updatedAt);
 
 		// Get endorsement counts for all RFDs

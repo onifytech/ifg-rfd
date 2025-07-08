@@ -9,6 +9,7 @@ import {
 	getRfdWithEndorsements,
 	canUserEditRfd,
 	canUserChangeStatus,
+	canUserPublishDraft,
 	isValidRfdStatus,
 	type RfdStatus
 } from '$lib/server/rfd-service';
@@ -34,6 +35,11 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		// Get RFD data with endorsements
 		const rfdData = await getRfdWithEndorsements(rfdId, user.id);
 		if (!rfdData) {
+			return json({ error: 'RFD not found' }, { status: 404 });
+		}
+
+		// Check if user can access this RFD (draft privacy)
+		if (rfdData.status === 'draft' && rfdData.authorId !== user.id) {
 			return json({ error: 'RFD not found' }, { status: 404 });
 		}
 
@@ -101,8 +107,11 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 		}
 
 		// Check permissions for status changes
-		if (status && status !== existingRfd.status && !canUserChangeStatus(dbUser.role)) {
-			return json({ error: 'Only administrators can change RFD status' }, { status: 403 });
+		if (status && status !== existingRfd.status && !canUserPublishDraft(user.id, dbUser.role, existingRfd.authorId, existingRfd.status)) {
+			const errorMessage = existingRfd.status === 'draft' 
+				? 'Only the creator can publish their draft RFD' 
+				: 'Only administrators can change RFD status';
+			return json({ error: errorMessage }, { status: 403 });
 		}
 
 		// Check permissions for other changes

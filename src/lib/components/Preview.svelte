@@ -57,6 +57,8 @@
 	$: isAdmin = user?.role === 'admin';
 	$: isOwner = user?.id === selectedRfd?.authorId;
 	$: canEdit = isAdmin || isOwner;
+	$: canChangeStatus = isAdmin || (selectedRfd?.status === 'draft' && isOwner);
+	$: isDraft = selectedRfd?.status === 'draft';
 	function formatDate(dateString: string) {
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -273,7 +275,14 @@
 			if (onRfdUpdate) {
 				onRfdUpdate(result.rfd);
 			}
-			toast.success('RFD updated successfully!');
+			
+			// Show appropriate success message
+			const wasPublished = selectedRfd?.status === 'draft' && result.rfd.status !== 'draft';
+			const successMessage = wasPublished 
+				? 'RFD published successfully! It is now visible to all team members.' 
+				: 'RFD updated successfully!';
+			toast.success(successMessage);
+			
 			isEditing = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
@@ -369,6 +378,20 @@
 				</div>
 			</div>
 		</div>
+		{#if isDraft && isOwner}
+			<div class="draft-notice border border-yellow-200 bg-yellow-50 p-4 rounded-lg mb-4">
+				<div class="flex items-start gap-3">
+					<span class="text-yellow-600 text-lg">⚠️</span>
+					<div>
+						<h4 class="text-sm font-semibold text-yellow-800 mb-1">Draft RFD - Private</h4>
+						<p class="text-sm text-yellow-700">
+							This RFD is currently in draft status and is only visible to you. 
+							Edit the status below to publish it and make it visible to others.
+						</p>
+					</div>
+				</div>
+			</div>
+		{/if}
 		{#if isEditing}
 			<div class="edit-form-container border-b border-gray-200 bg-gray-50 p-6">
 				<div class="edit-form">
@@ -448,11 +471,16 @@
 							{/if}
 						</div>
 					</div>
-					{#if isAdmin}
+					{#if canChangeStatus}
 						<div class="form-group mb-4">
-							<label for="status-edit" class="mb-2 block text-sm font-medium text-gray-700"
-								>Status:</label
-							>
+							<label for="status-edit" class="mb-2 block text-sm font-medium text-gray-700">
+								{isDraft ? 'Publish RFD - Change Status:' : 'Status:'}
+							</label>
+							{#if isDraft}
+								<p class="text-sm text-gray-600 mb-2">
+									Publishing will make this RFD visible to all team members.
+								</p>
+							{/if}
 							<select
 								id="status-edit"
 								bind:value={selectedStatus}
