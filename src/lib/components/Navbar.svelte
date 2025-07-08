@@ -25,7 +25,18 @@
 
 <!-- Mobile Navigation Overlay -->
 {#if mobileNavOpen}
-	<div class="mobile-nav-overlay" onclick={onCloseMobileNav}></div>
+	<div
+		class="mobile-nav-overlay"
+		role="button"
+		tabindex="0"
+		onclick={onCloseMobileNav}
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				onCloseMobileNav();
+			}
+		}}
+	></div>
 {/if}
 
 <!-- Mobile Navigation Menu -->
@@ -109,8 +120,6 @@
 </div>
 
 <style lang="postcss">
-	@import 'tailwindcss';
-
 	/* Mobile Navigation Styles */
 	.mobile-nav-header {
 		display: none;

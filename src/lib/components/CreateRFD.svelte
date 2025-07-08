@@ -22,9 +22,11 @@
 	let tagInput = $state('');
 	let availableTags: string[] = $state([]);
 	let showTagDropdown = $state(false);
-	let filteredTags = $derived(availableTags.filter(
-		(tag) => tag.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(tag)
-	));
+	let filteredTags = $derived(
+		availableTags.filter(
+			(tag) => tag.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(tag)
+		)
+	);
 	let isLoading = $state(false);
 	let error = $state('');
 
@@ -229,7 +231,7 @@
 						Choose a template...
 					{/if}
 				</option>
-				{#each templates as template}
+				{#each templates as template (template.id)}
 					<option value={template.id}>{template.name}</option>
 				{/each}
 			</select>
@@ -304,7 +306,7 @@
 			</label>
 			<div class="relative">
 				<div class="mb-2 flex flex-wrap gap-2">
-					{#each tags as tag}
+					{#each tags as tag (tag)}
 						<span
 							class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white"
 							style="background-color: {generateTagColor(tag)}"
@@ -335,7 +337,7 @@
 					<div
 						class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg"
 					>
-						{#each filteredTags.slice(0, 10) as tag}
+						{#each filteredTags.slice(0, 10) as tag (tag)}
 							<button
 								type="button"
 								class="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"

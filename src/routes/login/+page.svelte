@@ -17,7 +17,8 @@
 		<div class="login-form">
 			<a
 				href="/auth/google{new URLSearchParams($page.url.search).get('redirect')
-					? '?redirect=' + encodeURIComponent(new URLSearchParams($page.url.search).get('redirect'))
+					? '?redirect=' +
+						encodeURIComponent(new URLSearchParams($page.url.search).get('redirect') || '')
 					: ''}"
 				class="google-signin-btn"
 			>

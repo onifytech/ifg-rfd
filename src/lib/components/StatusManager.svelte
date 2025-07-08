@@ -4,7 +4,7 @@
 	export let rfdId: string;
 	export let currentStatus: string;
 	export let currentTitle: string;
-	export let onUpdate: (updatedRfd: any) => void;
+	export let onUpdate: (updatedRfd: unknown) => void;
 
 	let isEditing = false;
 	let isLoading = false;
@@ -94,7 +94,7 @@
 				class="status-select"
 				disabled={isLoading}
 			>
-				{#each statusOptions as option}
+				{#each statusOptions as option (option.value)}
 					<option value={option.value}>{option.label}</option>
 				{/each}
 			</select>

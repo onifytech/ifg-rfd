@@ -5,12 +5,12 @@ import { rfd, user as userTable, rfdStatusHistory } from '$lib/server/db/schema'
 import { lucia } from '$lib/server/auth';
 import { eq } from 'drizzle-orm';
 import { generateId } from 'lucia';
-import { 
-	getRfdWithEndorsements, 
-	canUserEditRfd, 
-	canUserChangeStatus, 
+import {
+	getRfdWithEndorsements,
+	canUserEditRfd,
+	canUserChangeStatus,
 	isValidRfdStatus,
-	type RfdStatus 
+	type RfdStatus
 } from '$lib/server/rfd-service';
 
 export const GET: RequestHandler = async ({ params, cookies }) => {
@@ -106,7 +106,10 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 		}
 
 		// Check permissions for other changes
-		if ((title || summary !== undefined || tags !== undefined) && !canUserEditRfd(user.id, dbUser.role, existingRfd.authorId)) {
+		if (
+			(title || summary !== undefined || tags !== undefined) &&
+			!canUserEditRfd(user.id, dbUser.role, existingRfd.authorId)
+		) {
 			return json(
 				{ error: 'Only the RFD owner or administrator can edit RFD details' },
 				{ status: 403 }
