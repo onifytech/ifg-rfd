@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getStatusColor, getStatusLabel, statusOptions } from '$lib/utils/statusUtils.js';
+	import { getStatusColor, getStatusLabel, statusOptions, getStatusDescription, shouldShowStatusDescription, getStatusColorScheme } from '$lib/utils/statusUtils';
 	import { toast } from '$lib/stores/toast.js';
 	type User = {
 		id: string;
@@ -61,12 +61,17 @@
 	$: isDraft = selectedRfd?.status === 'draft';
 	$: isOpenForReview = selectedRfd?.status === 'open_for_review';
 	
+	// Status description reactive variables
+	$: currentStatusDescription = selectedRfd ? getStatusDescription(selectedRfd.status) : null;
+	$: showStatusDescription = selectedRfd ? shouldShowStatusDescription(selectedRfd.status, isOwner, isAdmin) : false;
+	$: statusColorScheme = currentStatusDescription ? getStatusColorScheme(currentStatusDescription.colorScheme) : null;
+
 	// Filter status options based on user permissions
 	$: availableStatusOptions = (() => {
 		if (isAdmin) {
 			return statusOptions; // Admins can change to any status
 		}
-		
+
 		if (isOwner && selectedRfd) {
 			if (selectedRfd.status === 'draft') {
 				// Draft creators can only change to open_for_review
@@ -76,7 +81,7 @@
 				return statusOptions.filter(option => option.value === 'draft' || option.value === 'open_for_review');
 			}
 		}
-		
+
 		return statusOptions;
 	})();
 	function formatDate(dateString: string) {
@@ -282,20 +287,20 @@
 			if (onRfdUpdate) {
 				onRfdUpdate(result.rfd);
 			}
-			
+
 			// Show appropriate success message
 			const wasPublished = selectedRfd?.status === 'draft' && result.rfd.status === 'open_for_review';
 			const wasMadePrivate = selectedRfd?.status === 'open_for_review' && result.rfd.status === 'draft';
-			
+
 			let successMessage = 'RFD updated successfully!';
 			if (wasPublished) {
 				successMessage = 'RFD published for review! It is now visible to all team members.';
 			} else if (wasMadePrivate) {
 				successMessage = 'RFD moved back to draft. It is now private and only visible to you.';
 			}
-			
+
 			toast.success(successMessage);
-			
+
 			isEditing = false;
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
@@ -391,28 +396,14 @@
 				</div>
 			</div>
 		</div>
-		{#if isDraft && isOwner}
-			<div class="draft-notice border border-yellow-200 bg-yellow-50 p-4 rounded-lg mb-4">
+		{#if showStatusDescription && currentStatusDescription && statusColorScheme}
+			<div class="status-notice border {statusColorScheme.border} {statusColorScheme.bg} p-4 mb-4 rounded-lg">
 				<div class="flex items-start gap-3">
-					<span class="text-yellow-600 text-lg">⚠️</span>
+					<span class="{statusColorScheme.icon} text-lg">{currentStatusDescription.icon}</span>
 					<div>
-						<h4 class="text-sm font-semibold text-yellow-800 mb-1">Draft RFD - Private</h4>
-						<p class="text-sm text-yellow-700">
-							This RFD is currently in draft status and is only visible to you. 
-							Change the status to "Open for Review" to make it visible for team feedback.
-						</p>
-					</div>
-				</div>
-			</div>
-		{:else if isOpenForReview && isOwner}
-			<div class="review-notice border border-blue-200 bg-blue-50 p-4 rounded-lg mb-4">
-				<div class="flex items-start gap-3">
-					<span class="text-blue-600 text-lg">👀</span>
-					<div>
-						<h4 class="text-sm font-semibold text-blue-800 mb-1">Open for Review - Public</h4>
-						<p class="text-sm text-blue-700">
-							This RFD is visible to all team members for feedback. 
-							You can change it back to "Draft" to make it private, or leave it for admin review.
+						<h4 class="text-sm font-semibold {statusColorScheme.title} mb-1">{currentStatusDescription.title}</h4>
+						<p class="text-sm {statusColorScheme.text}">
+							{currentStatusDescription.description}
 						</p>
 					</div>
 				</div>
@@ -859,7 +850,7 @@
 			padding: 1rem;
 			height: auto;
 		}
-		
+
 		.doc-embed {
 			height: 400px;
 			flex: none;

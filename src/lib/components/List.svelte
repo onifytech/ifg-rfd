@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getStatusColor, getStatusLabel } from '$lib/utils/statusUtils.js';
+	import { getStatusColor, getStatusLabel } from '$lib/utils/statusUtils';
 
 	type RFD = {
 		id: string;
