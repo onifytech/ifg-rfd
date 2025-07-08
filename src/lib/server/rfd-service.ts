@@ -129,14 +129,27 @@ export function canUserChangeStatus(userRole: string): boolean {
 }
 
 /**
- * Check if user can change RFD status from draft (publish)
+ * Check if user can change RFD status (creator-specific rules)
  */
-export function canUserPublishDraft(userId: string, userRole: string, rfdAuthorId: string, currentStatus: string): boolean {
-	// Only the creator can publish their own draft RFD
-	if (currentStatus === 'draft') {
-		return userId === rfdAuthorId;
+export function canUserPublishDraft(userId: string, userRole: string, rfdAuthorId: string, currentStatus: string, newStatus: string): boolean {
+	// Safety checks for null/undefined values
+	if (!userId || !rfdAuthorId || !currentStatus || !newStatus) {
+		return false;
 	}
-	// For non-draft RFDs, only admins can change status
+	
+	const isCreator = userId === rfdAuthorId;
+	
+	// Creator can transition between draft and open_for_review
+	if (isCreator) {
+		if (currentStatus === 'draft' && newStatus === 'open_for_review') {
+			return true; // Draft to review
+		}
+		if (currentStatus === 'open_for_review' && newStatus === 'draft') {
+			return true; // Review back to draft
+		}
+	}
+	
+	// For all other status changes, only admins can change status
 	return userRole === 'admin';
 }
 
