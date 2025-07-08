@@ -27,6 +27,20 @@
 	export let rfds: RFD[] = [];
 	export let onRfdSelect: (rfd: RFD) => void;
 	export let selectedRfd: RFD | null = null;
+	export let currentFilter: { status: string | null; general: string | null } = {
+		status: null,
+		general: null
+	};
+
+	// Get filter description for display
+	function getFilterDescription(): string {
+		if (currentFilter.status) {
+			return `${getStatusLabel(currentFilter.status)}`;
+		} else if (currentFilter.general === 'recent') {
+			return 'Recent RFDs (Last 30 days)';
+		}
+		return 'All RFDs';
+	}
 
 	function formatDate(dateString: string) {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -84,12 +98,18 @@
 
 <div class="content bg-white">
 	<div class="header">
-		<h1>RFDs</h1>
+		<div class="header-content">
+			<h1>{getFilterDescription()}</h1>
+			<p class="rfd-count">{rfds.length} RFD{rfds.length !== 1 ? 's' : ''}</p>
+		</div>
 	</div>
 
 	{#if rfds.length === 0}
 		<div class="empty-state">
-			<p>No RFDs found.</p>
+			<p>No RFDs found{currentFilter.status || currentFilter.general ? ' for this filter' : ''}.</p>
+			{#if currentFilter.status || currentFilter.general}
+				<a href="/" class="clear-filter-link">View all RFDs</a>
+			{/if}
 		</div>
 	{:else}
 		<ul class="rfd-list">
@@ -201,11 +221,15 @@
 	.header {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
+		align-items: flex-start;
 		margin-bottom: 1.5rem; /* rhythm-base */
 		border-bottom: 1px solid #e5e7eb;
 		padding-bottom: 0.75rem; /* rhythm-sm */
 		flex-shrink: 0; /* Prevent header from shrinking */
+	}
+
+	.header-content {
+		flex: 1;
 	}
 
 	.header h1 {
@@ -214,6 +238,26 @@
 		font-weight: 700;
 		color: #111827;
 		line-height: 3rem; /* rhythm-lg line height */
+	}
+
+	.rfd-count {
+		margin: 0;
+		font-size: 0.875rem;
+		color: #6b7280;
+		line-height: 1.5rem;
+	}
+
+	.clear-filter-link {
+		color: #3b82f6;
+		text-decoration: none;
+		font-size: 0.875rem;
+		margin-top: 0.5rem;
+		display: inline-block;
+	}
+
+	.clear-filter-link:hover {
+		color: #2563eb;
+		text-decoration: underline;
 	}
 
 	.empty-state {
