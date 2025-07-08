@@ -57,8 +57,28 @@
 	$: isAdmin = user?.role === 'admin';
 	$: isOwner = user?.id === selectedRfd?.authorId;
 	$: canEdit = isAdmin || isOwner;
-	$: canChangeStatus = isAdmin || (selectedRfd?.status === 'draft' && isOwner);
+	$: canChangeStatus = isAdmin || (isOwner && (selectedRfd?.status === 'draft' || selectedRfd?.status === 'open_for_review'));
 	$: isDraft = selectedRfd?.status === 'draft';
+	$: isOpenForReview = selectedRfd?.status === 'open_for_review';
+	
+	// Filter status options based on user permissions
+	$: availableStatusOptions = (() => {
+		if (isAdmin) {
+			return statusOptions; // Admins can change to any status
+		}
+		
+		if (isOwner && selectedRfd) {
+			if (selectedRfd.status === 'draft') {
+				// Draft creators can only change to open_for_review
+				return statusOptions.filter(option => option.value === 'draft' || option.value === 'open_for_review');
+			} else if (selectedRfd.status === 'open_for_review') {
+				// Open for review creators can only change back to draft
+				return statusOptions.filter(option => option.value === 'draft' || option.value === 'open_for_review');
+			}
+		}
+		
+		return statusOptions;
+	})();
 	function formatDate(dateString: string) {
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -115,20 +135,7 @@
 			toast.success('Link copied to clipboard!');
 		} catch (error) {
 			console.error('Failed to copy link:', error);
-			// Fallback for older browsers
-			const textArea = document.createElement('textarea');
-			textArea.value = url;
-			document.body.appendChild(textArea);
-			textArea.focus();
-			textArea.select();
-			try {
-				document.execCommand('copy');
-				toast.success('Link copied to clipboard!');
-			} catch (fallbackError) {
-				console.error('Fallback copy failed:', fallbackError);
-				toast.error('Failed to copy link. Please copy manually: ' + url);
-			}
-			document.body.removeChild(textArea);
+			toast.error('Failed to copy link. Please copy manually: ' + url);
 		}
 	}
 	function setActiveTab(tabId: string) {
@@ -240,8 +247,8 @@
 		const hasSummaryChange = editedSummary !== (selectedRfd.summary || '');
 		const hasTagsChange = JSON.stringify(editedTags) !== (selectedRfd.tags || JSON.stringify([]));
 		// Check permissions for the changes being made
-		if (hasStatusChange && !isAdmin) {
-			error = 'Only administrators can change RFD status';
+		if (hasStatusChange && !canChangeStatus) {
+			error = 'You do not have permission to change this RFD status';
 			return;
 		}
 		if ((hasTitleChange || hasSummaryChange || hasTagsChange) && !isOwner && !isAdmin) {
@@ -277,10 +284,16 @@
 			}
 			
 			// Show appropriate success message
-			const wasPublished = selectedRfd?.status === 'draft' && result.rfd.status !== 'draft';
-			const successMessage = wasPublished 
-				? 'RFD published successfully! It is now visible to all team members.' 
-				: 'RFD updated successfully!';
+			const wasPublished = selectedRfd?.status === 'draft' && result.rfd.status === 'open_for_review';
+			const wasMadePrivate = selectedRfd?.status === 'open_for_review' && result.rfd.status === 'draft';
+			
+			let successMessage = 'RFD updated successfully!';
+			if (wasPublished) {
+				successMessage = 'RFD published for review! It is now visible to all team members.';
+			} else if (wasMadePrivate) {
+				successMessage = 'RFD moved back to draft. It is now private and only visible to you.';
+			}
+			
 			toast.success(successMessage);
 			
 			isEditing = false;
@@ -386,7 +399,20 @@
 						<h4 class="text-sm font-semibold text-yellow-800 mb-1">Draft RFD - Private</h4>
 						<p class="text-sm text-yellow-700">
 							This RFD is currently in draft status and is only visible to you. 
-							Edit the status below to publish it and make it visible to others.
+							Change the status to "Open for Review" to make it visible for team feedback.
+						</p>
+					</div>
+				</div>
+			</div>
+		{:else if isOpenForReview && isOwner}
+			<div class="review-notice border border-blue-200 bg-blue-50 p-4 rounded-lg mb-4">
+				<div class="flex items-start gap-3">
+					<span class="text-blue-600 text-lg">👀</span>
+					<div>
+						<h4 class="text-sm font-semibold text-blue-800 mb-1">Open for Review - Public</h4>
+						<p class="text-sm text-blue-700">
+							This RFD is visible to all team members for feedback. 
+							You can change it back to "Draft" to make it private, or leave it for admin review.
 						</p>
 					</div>
 				</div>
@@ -474,11 +500,15 @@
 					{#if canChangeStatus}
 						<div class="form-group mb-4">
 							<label for="status-edit" class="mb-2 block text-sm font-medium text-gray-700">
-								{isDraft ? 'Publish RFD - Change Status:' : 'Status:'}
+								{isDraft ? 'Publish RFD - Change Status:' : isOpenForReview && isOwner ? 'Status (Draft ↔ Review):' : 'Status:'}
 							</label>
 							{#if isDraft}
 								<p class="text-sm text-gray-600 mb-2">
-									Publishing will make this RFD visible to all team members.
+									Change to "Open for Review" to make this RFD visible to all team members for feedback.
+								</p>
+							{:else if isOpenForReview && isOwner}
+								<p class="text-sm text-gray-600 mb-2">
+									You can change back to "Draft" to make it private again, or leave it for admin review.
 								</p>
 							{/if}
 							<select
@@ -487,7 +517,7 @@
 								class="form-select w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 								disabled={isLoading}
 							>
-								{#each statusOptions as option (option.value)}
+								{#each availableStatusOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>

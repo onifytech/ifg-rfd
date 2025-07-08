@@ -79,6 +79,7 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 			return json({ error: 'User not found' }, { status: 404 });
 		}
 
+
 		// Parse request body
 		const body = await request.json();
 		const { title, summary, status, tags, comment } = body;
@@ -107,10 +108,24 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 		}
 
 		// Check permissions for status changes
-		if (status && status !== existingRfd.status && !canUserPublishDraft(user.id, dbUser.role, existingRfd.authorId, existingRfd.status)) {
-			const errorMessage = existingRfd.status === 'draft' 
-				? 'Only the creator can publish their draft RFD' 
-				: 'Only administrators can change RFD status';
+		
+		if (status && status !== existingRfd.status && !canUserPublishDraft(user.id, dbUser.role, existingRfd.authorId, existingRfd.status, status)) {
+			let errorMessage = 'Permission denied';
+			
+			if (existingRfd.authorId === user.id) {
+				// User is the creator
+				if (existingRfd.status === 'draft') {
+					errorMessage = 'You can only change draft RFDs to "Open for Review"';
+				} else if (existingRfd.status === 'open_for_review') {
+					errorMessage = 'You can only change this RFD back to "Draft"';
+				} else {
+					errorMessage = 'Only administrators can change this RFD status';
+				}
+			} else {
+				// User is not the creator
+				errorMessage = 'Only the creator or administrators can change RFD status';
+			}
+			
 			return json({ error: errorMessage }, { status: 403 });
 		}
 
