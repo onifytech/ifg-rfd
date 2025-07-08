@@ -93,93 +93,84 @@
 		</div>
 	{:else}
 		<ul class="rfd-list">
-			{#each rfds as rfd}
-				<li
-					class="rfd-item {selectedRfd?.id === rfd.id ? 'selected' : ''}"
-					role="button"
-					tabindex="0"
-					onclick={() => handleRfdClick(rfd)}
-					onkeydown={(e) => {
-						if (e.key === 'Enter' || e.key === ' ') {
-							e.preventDefault();
-							handleRfdClick(rfd);
-						}
-					}}
-				>
-					<div class="rfd-header">
-						<div class="title-section">
-							<div class="title-row">
-								<span class="rfd-number">{formatRfdNumber(rfd.rfdNumber)}</span>
-								<h2>{rfd.title}</h2>
+			{#each rfds as rfd (rfd.id)}
+				<li class="rfd-item {selectedRfd?.id === rfd.id ? 'selected' : ''}">
+					<button class="rfd-item-button" onclick={() => handleRfdClick(rfd)}>
+						<div class="rfd-header">
+							<div class="title-section">
+								<div class="title-row">
+									<span class="rfd-number">{formatRfdNumber(rfd.rfdNumber)}</span>
+									<h2>{rfd.title}</h2>
+								</div>
+								<a
+									href={rfd.googleDocUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="external-link"
+									onclick={(e) => e.stopPropagation}
+								>
+									Open in Google Docs
+								</a>
 							</div>
-							<a
-								href={rfd.googleDocUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="external-link"
-								onclick={(e) => e.stopPropagation}
-							>
-								Open in Google Docs
-							</a>
+							<div class="status-section">
+								<span class="status-badge" style="background-color: {getStatusColor(rfd.status)};">
+									{getStatusLabel(rfd.status)}
+								</span>
+							</div>
 						</div>
-						<div class="status-section">
-							<span class="status-badge" style="background-color: {getStatusColor(rfd.status)};">
-								{getStatusLabel(rfd.status)}
-							</span>
-						</div>
-					</div>
 
-					{#if rfd.summary}
-						<p class="summary">{rfd.summary}</p>
-					{/if}
-
-					<div class="rfd-meta">
-						<span class="date">Created {formatDate(rfd.createdAt)}</span>
-						{#if rfd.updatedAt !== rfd.createdAt}
-							<span class="date">• Updated {formatDate(rfd.updatedAt)}</span>
+						{#if rfd.summary}
+							<p class="summary">{rfd.summary}</p>
 						{/if}
-						<div class="pump-section">
-							<span class="pump-count">
-								🔥 {rfd.endorsementCount} pump{rfd.endorsementCount !== 1 ? 's' : ''}
-							</span>
-							{#if rfd.endorsers && rfd.endorsers.length > 0}
-								<div class="pumper-avatars">
-									{#each rfd.endorsers.slice(0, 5) as endorser, index}
-										{#if endorser.picture}
-											<img
-												src={endorser.picture}
-												alt={endorser.name || 'User'}
-												class="pumper-avatar"
-												style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
-												title={endorser.name || 'User'}
-											/>
-										{:else}
-											<div
-												class="pumper-avatar pumper-avatar-placeholder"
-												style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
-												title={endorser.name || 'User'}
-											>
-												{(endorser.name || 'U').charAt(0).toUpperCase()}
+
+						<div class="rfd-meta">
+							<span class="date">Created {formatDate(rfd.createdAt)}</span>
+							{#if rfd.updatedAt !== rfd.createdAt}
+								<span class="date">• Updated {formatDate(rfd.updatedAt)}</span>
+							{/if}
+							<div class="pump-section">
+								<span class="pump-count">
+									🔥 {rfd.endorsementCount} pump{rfd.endorsementCount !== 1 ? 's' : ''}
+								</span>
+								{#if rfd.endorsers && rfd.endorsers.length > 0}
+									<div class="pumper-avatars">
+										{#each rfd.endorsers.slice(0, 5) as endorser, index (endorser.userId)}
+											{#if endorser.picture}
+												<img
+													src={endorser.picture}
+													alt={endorser.name || 'User'}
+													class="pumper-avatar"
+													style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
+													title={endorser.name || 'User'}
+												/>
+											{:else}
+												<div
+													class="pumper-avatar pumper-avatar-placeholder"
+													style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
+													title={endorser.name || 'User'}
+												>
+													{(endorser.name || 'U').charAt(0).toUpperCase()}
+												</div>
+											{/if}
+										{/each}
+										{#if rfd.endorsers.length > 5}
+											<div class="pumper-more" style="margin-left: -0.5rem">
+												+{rfd.endorsers.length - 5}
 											</div>
 										{/if}
-									{/each}
-									{#if rfd.endorsers.length > 5}
-										<div class="pumper-more" style="margin-left: -0.5rem">
-											+{rfd.endorsers.length - 5}
-										</div>
-									{/if}
-								</div>
-							{/if}
+									</div>
+								{/if}
+							</div>
 						</div>
-					</div>
 
-					{#if parseTags(rfd.tags).length > 0}
-						<div class="tags">
-							{#each parseTags(rfd.tags) as tag}
-								<span class="tag" style="background-color: {generateTagColor(tag)}">{tag}</span>
-							{/each}
-						</div>
-					{/if}
+						{#if parseTags(rfd.tags).length > 0}
+							<div class="tags">
+								{#each parseTags(rfd.tags) as tag (tag)}
+									<span class="tag" style="background-color: {generateTagColor(tag)}">{tag}</span>
+								{/each}
+							</div>
+						{/if}
+					</button>
 				</li>
 			{/each}
 		</ul>
@@ -300,6 +291,18 @@
 		border-color: #3b82f6;
 		background-color: #eff6ff;
 		box-shadow: 0 1px 3px 0 rgba(59, 130, 246, 0.1);
+	}
+
+	.rfd-item-button {
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: inherit;
+		color: inherit;
 	}
 
 	.rfd-header {
@@ -438,7 +441,6 @@
 		font-weight: 600;
 		position: relative;
 	}
-
 
 	.tags {
 		display: flex;

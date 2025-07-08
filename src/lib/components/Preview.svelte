@@ -362,7 +362,7 @@
 						>
 						<div class="relative">
 							<div class="tags-container mb-2 flex flex-wrap gap-2">
-								{#each editedTags as tag}
+								{#each editedTags as tag (tag)}
 									<span
 										class="tag-chip inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white"
 										style="background-color: {generateTagColor(tag)}"
@@ -395,7 +395,7 @@
 								<div
 									class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg"
 								>
-									{#each filteredTags.slice(0, 10) as tag}
+									{#each filteredTags.slice(0, 10) as tag (tag)}
 										<button
 											type="button"
 											class="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
@@ -419,7 +419,7 @@
 								class="form-select w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 								disabled={isLoading}
 							>
-								{#each statusOptions as option}
+								{#each statusOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -469,7 +469,7 @@
 		<!-- Tab Navigation -->
 		<div class="tab-navigation border-b border-gray-200 bg-white">
 			<div class="flex">
-				{#each tabs as tab}
+				{#each tabs as tab (tab.id)}
 					<button
 						class="tab-button flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors {activeTab ===
 						tab.id
@@ -546,7 +546,7 @@
 						<div class="mb-6">
 							<h3 class="mb-3 text-lg font-semibold">Tags</h3>
 							<div class="flex flex-wrap gap-2">
-								{#each parseTags(selectedRfd.tags) as tag}
+								{#each parseTags(selectedRfd.tags) as tag (tag)}
 									<span
 										class="rounded-full px-2 py-1 text-xs font-medium text-white"
 										style="background-color: {generateTagColor(tag)}"
@@ -615,7 +615,7 @@
 						</div>
 						{#if selectedRfd.endorsers && selectedRfd.endorsers.length > 0}
 							<div class="space-y-3">
-								{#each selectedRfd.endorsers as endorser}
+								{#each selectedRfd.endorsers as endorser (endorser.userId)}
 									<div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
 										{#if endorser.picture}
 											<img

@@ -5,7 +5,6 @@ import { db } from '$lib/server/db';
 import { rfd, user as userTable, rfdEndorsement } from '$lib/server/db/schema';
 import { lucia } from '$lib/server/auth';
 import { eq, count, max } from 'drizzle-orm';
-import { generateId } from 'lucia';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
@@ -76,7 +75,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	}
 };
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
+export const GET: RequestHandler = async ({ cookies }) => {
 	try {
 		// Check authentication
 		const sessionId = cookies.get(lucia.sessionCookieName);
@@ -90,9 +89,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		}
 
 		// Get query parameters
-		const status = url.searchParams.get('status');
-		const authorId = url.searchParams.get('author');
-		const tag = url.searchParams.get('tag');
+		// const status = url.searchParams.get('status');
+		// const authorId = url.searchParams.get('author');
+		// const tag = url.searchParams.get('tag');
 
 		// Add filters if provided
 		// Note: This is a simplified example. You'd want to use proper query building
@@ -180,5 +179,3 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		return json({ error: 'Failed to fetch RFDs' }, { status: 500 });
 	}
 };
-
-

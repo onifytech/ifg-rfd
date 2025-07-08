@@ -182,8 +182,25 @@
 
 <!-- Create RFD Modal -->
 {#if showCreateModal}
-	<div class="modal-overlay" onclick={closeCreateModal}>
-		<div class="modal-content" onclick={(e) => e.stopPropagation()}>
+	<div
+		class="modal-overlay"
+		role="button"
+		tabindex="0"
+		onclick={closeCreateModal}
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				closeCreateModal();
+			}
+		}}
+	>
+		<div
+			class="modal-content"
+			role="dialog"
+			tabindex="-1"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+		>
 			<div class="modal-header">
 				<h2 class="modal-title">Create New RFD</h2>
 			</div>
@@ -196,8 +213,25 @@
 
 <!-- Mobile RFD Preview Modal -->
 {#if showMobilePreview && selectedRfd}
-	<div class="mobile-preview-overlay" onclick={closeMobilePreview}>
-		<div class="mobile-preview-content" onclick={(e) => e.stopPropagation()}>
+	<div
+		class="mobile-preview-overlay"
+		role="button"
+		tabindex="0"
+		onclick={closeMobilePreview}
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				closeMobilePreview();
+			}
+		}}
+	>
+		<div
+			class="mobile-preview-content"
+			role="dialog"
+			tabindex="-1"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+		>
 			<div class="mobile-preview-header">
 				<h2 class="mobile-preview-title">RFD Preview</h2>
 				<button
@@ -221,8 +255,6 @@
 {/if}
 
 <style lang="postcss">
-	@import 'tailwindcss';
-
 	section {
 		display: flex;
 		flex-direction: row;
@@ -354,21 +386,23 @@
 	}
 
 	.modal-header {
-		@apply flex items-center justify-between border-b border-gray-200;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border-bottom: 1px solid #e5e7eb;
 		padding: 1.5rem; /* rhythm-base */
 	}
 
 	.modal-title {
-		@apply text-2xl font-bold text-gray-900;
+		font-size: 1.5rem;
+		font-weight: bold;
+		color: #111827;
 		margin: 0;
 		line-height: 3rem; /* rhythm-lg line height */
 	}
 
-	.modal-close {
-		@apply cursor-pointer border-none bg-transparent p-1 text-xl font-bold text-gray-400 hover:text-gray-600;
-	}
-
 	.modal-body {
-		@apply max-h-[calc(90vh-80px)] overflow-y-auto;
+		max-height: calc(90vh - 80px);
+		overflow-y: auto;
 	}
 </style>

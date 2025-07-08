@@ -43,7 +43,10 @@ export interface RfdWithEndorsements {
 /**
  * Get RFD with endorsement data
  */
-export async function getRfdWithEndorsements(rfdId: string, userId: string): Promise<RfdWithEndorsements | null> {
+export async function getRfdWithEndorsements(
+	rfdId: string,
+	userId: string
+): Promise<RfdWithEndorsements | null> {
 	// Get RFD with author info
 	const [rfdData] = await db
 		.select({

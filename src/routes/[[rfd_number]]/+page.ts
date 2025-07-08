@@ -26,7 +26,7 @@ export const load: PageLoad = async ({ parent, fetch, params, url }) => {
 				// Invalid RFD number format
 				rfdNotFound = true;
 			} else {
-				targetRfd = rfds.find((rfd: any) => rfd.rfdNumber === rfdNumber);
+				targetRfd = rfds.find((rfd: { rfdNumber: number }) => rfd.rfdNumber === rfdNumber);
 				if (!targetRfd) {
 					rfdNotFound = true;
 				}

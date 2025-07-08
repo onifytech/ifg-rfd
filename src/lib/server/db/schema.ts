@@ -111,4 +111,3 @@ export const rfdEndorsement = pgTable(
 		uniqueUserRfd: unique().on(table.rfdId, table.userId)
 	})
 );
-

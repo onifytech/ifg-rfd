@@ -45,10 +45,10 @@
 </div>
 
 <style lang="postcss">
-	@import 'tailwindcss';
-
 	.sidebar {
-		@apply flex flex-col justify-between;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
 		width: 25%;
 		padding: 0;
 		height: 100vh;
@@ -58,12 +58,14 @@
 	}
 
 	.sidebar-content {
-		@apply flex-1;
+		flex: 1;
 		padding: 1.5rem; /* rhythm-base */
 	}
 
 	.sidebar-title {
-		@apply text-2xl font-bold text-gray-800;
+		font-size: 1.5rem;
+		font-weight: bold;
+		color: #1f2937;
 		margin: 0 0 1.5rem 0; /* rhythm-base bottom margin */
 		line-height: 3rem; /* rhythm-lg line height */
 	}
@@ -79,18 +81,29 @@
 	}
 
 	.nav-section-title {
-		@apply text-sm font-medium tracking-wider text-gray-600 uppercase;
+		font-size: 0.875rem;
+		font-weight: 500;
+		letter-spacing: 0.05em;
+		color: #4b5563;
+		text-transform: uppercase;
 		margin: 0 0 0.75rem 0; /* rhythm-sm bottom margin */
 		line-height: 1.5rem; /* rhythm base line height */
 	}
 
 	.nav-divider {
-		@apply border-t border-gray-300;
+		border-top: 1px solid #d1d5db;
 		margin: 1.5rem 0; /* rhythm-base top and bottom */
 	}
 
 	.nav-link {
-		@apply block w-full cursor-pointer rounded-md text-start text-sm text-gray-700 transition-colors duration-150;
+		display: block;
+		width: 100%;
+		cursor: pointer;
+		border-radius: 0.375rem;
+		text-align: start;
+		font-size: 0.875rem;
+		color: #374151;
+		transition: color 0.15s;
 		text-decoration: none;
 		padding: 0.375rem 0.75rem; /* rhythm-xs vertical, rhythm-sm horizontal */
 		margin-bottom: 0.375rem; /* rhythm-xs */
@@ -98,11 +111,14 @@
 	}
 
 	.nav-link:hover {
-		@apply bg-gray-300 text-gray-900;
+		background-color: #d1d5db;
+		color: #111827;
 	}
 
 	.nav-link.active {
-		@apply bg-blue-100 font-medium text-blue-700;
+		background-color: #dbeafe;
+		font-weight: 500;
+		color: #1d4ed8;
 	}
 
 	.status-draft {
@@ -126,7 +142,8 @@
 	}
 
 	.user-info {
-		@apply flex flex-col;
+		display: flex;
+		flex-direction: column;
 		padding: 1.5rem; /* rhythm-base */
 		background: #f8fafc;
 		border-top: 1px solid #e2e8f0;
@@ -154,12 +171,6 @@
 		justify-content: center;
 		font-weight: 600;
 		font-size: 1rem;
-	}
-
-	.user-profile h2 {
-		margin: 0;
-		font-size: 18px;
-		color: #1f2937;
 	}
 
 	.user-profile p {
