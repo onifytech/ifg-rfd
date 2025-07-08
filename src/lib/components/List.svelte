@@ -303,6 +303,7 @@
 		font-family: inherit;
 		font-size: inherit;
 		color: inherit;
+		text-decoration: none;
 	}
 
 	.rfd-header {

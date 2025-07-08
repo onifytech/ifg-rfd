@@ -53,7 +53,7 @@
 		{/if}
 		<div>
 			<p class="mobile-user-name">{user.name}</p>
-			<a href="/auth/logout" class="mobile-logout-btn" onclick={onCloseMobileNav}>Sign Out</a>
+			<a href="/auth/logout" class="btn btn-ghost btn-sm" onclick={onCloseMobileNav}>Sign Out</a>
 		</div>
 	</div>
 
@@ -66,7 +66,7 @@
 						onOpenCreateModal();
 						onCloseMobileNav();
 					}}
-					class="mobile-nav-link"
+					class="btn btn-gradient w-full"
 				>
 					Create RFD
 				</button>
@@ -256,15 +256,6 @@
 			font-size: 0.875rem;
 		}
 
-		.mobile-logout-btn {
-			color: #6b7280;
-			font-size: 0.75rem;
-			text-decoration: none;
-		}
-
-		.mobile-logout-btn:hover {
-			text-decoration: underline;
-		}
 
 		.mobile-nav {
 			padding: 1.5rem;
@@ -336,5 +327,6 @@
 		.mobile-nav-link.status-archived {
 			border-left: 4px solid #6b7280;
 		}
+
 	}
 </style>
