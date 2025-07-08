@@ -37,6 +37,17 @@
 	let mobileNavOpen = false;
 	let showMobilePreview = false;
 	let rfds = data.rfds;
+	let currentFilter = data.currentFilter;
+
+	// Reactive update when data changes (e.g., when navigating to a new filter)
+	$: {
+		rfds = data.rfds;
+		currentFilter = data.currentFilter;
+		// Clear selection when filtering changes to avoid showing RFD not in current filter
+		if (selectedRfd && !rfds.some((rfd: RFD) => rfd.id === selectedRfd?.id)) {
+			selectedRfd = null;
+		}
+	}
 
 	// Auto-select RFD if targetRfd is provided
 	onMount(() => {
@@ -174,8 +185,8 @@
 	</div>
 {:else}
 	<section>
-		<Sidebar user={data.user} onOpenCreateModal={openCreateModal} />
-		<List {rfds} onRfdSelect={handleRfdSelect} {selectedRfd} />
+		<Sidebar user={data.user} onOpenCreateModal={openCreateModal} {currentFilter} />
+		<List {rfds} onRfdSelect={handleRfdSelect} {selectedRfd} {currentFilter} />
 		<Preview {selectedRfd} user={data.user} onRfdUpdate={handleRfdUpdate} />
 	</section>
 {/if}

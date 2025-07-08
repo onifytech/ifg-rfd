@@ -1,6 +1,19 @@
 <script lang="ts">
 	export let user: import('lucia').User;
 	export let onOpenCreateModal: () => void;
+	export let currentFilter: { status: string | null; general: string | null } = { status: null, general: null };
+	
+	// Helper function to check if a link is active
+	function isActive(type: 'status' | 'general' | 'all', value?: string): boolean {
+		if (type === 'all') {
+			return !currentFilter.status && !currentFilter.general;
+		} else if (type === 'status') {
+			return currentFilter.status === value;
+		} else if (type === 'general') {
+			return currentFilter.general === value;
+		}
+		return false;
+	}
 </script>
 
 <div class="sidebar bg-gray-200">
@@ -14,17 +27,18 @@
 		<div class="nav-divider"></div>
 		<nav class="sidebar-nav">
 			<ul class="nav-section">
-				<li><a href="/" class="nav-link">All RFDs</a></li>
-				<li><a href="/?filter=recent" class="nav-link">Recent</a></li>
+				<li><a href="/" class="nav-link {isActive('all') ? 'nav-link-active' : ''}">All RFDs</a></li>
+				<li><a href="/?filter=recent" class="nav-link {isActive('general', 'recent') ? 'nav-link-active' : ''}">Recent</a></li>
 			</ul>
 			<div class="nav-divider"></div>
 			<p class="nav-section-title">By Status</p>
 			<ul class="nav-section">
-				<li><a href="/?status=draft" class="nav-link status-draft">Draft</a></li>
-				<li><a href="/?status=review" class="nav-link status-review">Review</a></li>
-				<li><a href="/?status=approved" class="nav-link status-approved">Approved</a></li>
-				<li><a href="/?status=rejected" class="nav-link status-rejected">Rejected</a></li>
-				<li><a href="/?status=archived" class="nav-link status-archived">Archived</a></li>
+				<li><a href="/?status=draft" class="nav-link status-draft {isActive('status', 'draft') ? 'nav-link-active' : ''}">Draft</a></li>
+				<li><a href="/?status=open_for_review" class="nav-link status-review {isActive('status', 'open_for_review') ? 'nav-link-active' : ''}">Open for Review</a></li>
+				<li><a href="/?status=accepted" class="nav-link status-approved {isActive('status', 'accepted') ? 'nav-link-active' : ''}">Accepted</a></li>
+				<li><a href="/?status=enforced" class="nav-link status-enforced {isActive('status', 'enforced') ? 'nav-link-active' : ''}">Enforced</a></li>
+				<li><a href="/?status=rejected" class="nav-link status-rejected {isActive('status', 'rejected') ? 'nav-link-active' : ''}">Rejected</a></li>
+				<li><a href="/?status=retracted" class="nav-link status-archived {isActive('status', 'retracted') ? 'nav-link-active' : ''}">Retracted</a></li>
 			</ul>
 		</nav>
 	</div>
@@ -128,6 +142,17 @@
 		color: #111827;
 	}
 
+	.nav-link-active {
+		background-color: #3b82f6 !important;
+		color: white !important;
+		font-weight: 600;
+	}
+
+	.nav-link-active:hover {
+		background-color: #2563eb !important;
+		color: white !important;
+	}
+
 	.status-draft {
 		border-left: 4px solid #94a3b8;
 	}
@@ -138,6 +163,10 @@
 
 	.status-approved {
 		border-left: 4px solid #10b981;
+	}
+
+	.status-enforced {
+		border-left: 4px solid #059669;
 	}
 
 	.status-rejected {
