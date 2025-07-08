@@ -98,6 +98,34 @@
 			isEndorsing = false;
 		}
 	}
+
+	async function handleCopyLink() {
+		if (!selectedRfd) return;
+
+		const url = `${window.location.origin}/${selectedRfd.rfdNumber}`;
+
+		try {
+			await navigator.clipboard.writeText(url);
+			// You could add a toast notification here in the future
+			console.log('Link copied to clipboard');
+		} catch (error) {
+			console.error('Failed to copy link:', error);
+			// Fallback for older browsers
+			const textArea = document.createElement('textarea');
+			textArea.value = url;
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+			try {
+				document.execCommand('copy');
+				console.log('Link copied to clipboard (fallback)');
+			} catch (fallbackError) {
+				console.error('Fallback copy failed:', fallbackError);
+				alert('Failed to copy link. Please copy manually: ' + url);
+			}
+			document.body.removeChild(textArea);
+		}
+	}
 	function setActiveTab(tabId: string) {
 		activeTab = tabId;
 	}
@@ -284,13 +312,21 @@
 					<div class="flex flex-col gap-2 md:flex-row">
 						<div>
 							<button
-								class="rounded px-4 py-2 font-medium transition-colors {selectedRfd.userHasEndorsed
-									? 'bg-red-600 text-white hover:bg-red-700'
-									: 'bg-gray-200 text-gray-800 hover:bg-gray-300'}"
+								class="btn btn-light"
+								onclick={handleCopyLink}
+								title="Copy link to this RFD"
+							>
+								<span>🔗</span>
+								<span>Copy Link</span>
+							</button>
+						</div>
+						<div>
+							<button
+								class="btn {selectedRfd.userHasEndorsed ? 'btn-danger' : 'btn-light'}"
 								onclick={handlePump}
 								disabled={isEndorsing}
 							>
-								<span class="mr-2">🔥</span>
+								<span>🔥</span>
 								<span>
 									{#if isEndorsing}
 										Processing...
@@ -307,20 +343,20 @@
 								href={selectedRfd.googleDocUrl}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="inline-flex items-center rounded bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
+								class="btn btn-primary"
 							>
-								<span class="mr-2">📄</span>
+								<span>📄</span>
 								<span>Open in Google Docs</span>
 							</a>
 						</div>
 						{#if canEdit}
 							<div>
 								<button
-									class="inline-flex items-center rounded bg-gray-600 px-4 py-2 font-medium text-white transition-colors hover:bg-gray-700"
+									class="btn btn-secondary"
 									onclick={startEditing}
 									disabled={isEditing}
 								>
-									<span class="mr-2">✏️</span>
+									<span>✏️</span>
 									<span>Edit</span>
 								</button>
 							</div>
@@ -448,7 +484,7 @@
 					<div class="button-group flex gap-3">
 						<button
 							type="button"
-							class="save-btn rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+							class="btn btn-primary"
 							onclick={saveChanges}
 							disabled={isLoading}
 						>
@@ -456,7 +492,7 @@
 						</button>
 						<button
 							type="button"
-							class="cancel-btn rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+							class="btn btn-outline"
 							onclick={cancelEditing}
 							disabled={isLoading}
 						>
@@ -557,20 +593,48 @@
 							</div>
 						</div>
 					{/if}
+
+					<!-- Document Actions -->
+					<div class="mb-6">
+						<h3 class="mb-3 text-lg font-semibold">Document</h3>
+						<div class="flex flex-col gap-2 sm:flex-row">
+							<button
+								onclick={() => setActiveTab('document')}
+								class="btn btn-primary"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+									/>
+								</svg>
+								Read RFD
+							</button>
+							<a
+								href={selectedRfd.googleDocUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="btn btn-success"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+									/>
+								</svg>
+								Open Google Docs
+							</a>
+						</div>
+					</div>
 				</div>
 			{:else if activeTab === 'document'}
-				<div class="p-6">
-					<div class="mb-4 flex items-center justify-between">
+				<div class="document-tab-container">
+					<div class="document-header">
 						<h3 class="text-lg font-semibold">Google Document</h3>
-						<a
-							href={selectedRfd.googleDocUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center rounded bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-						>
-							<span class="mr-2">📄</span>
-							<span>Open in Google Docs</span>
-						</a>
 					</div>
 					<div class="doc-embed overflow-hidden rounded-lg border border-gray-200">
 						<iframe
@@ -704,17 +768,39 @@
 		text-transform: capitalize;
 		font-weight: 500;
 	}
+	.document-tab-container {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		padding: 1.5rem;
+	}
+
+	.document-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 1rem;
+		flex-shrink: 0;
+	}
+
 	.doc-embed {
-		height: 600px;
+		flex: 1;
 		overflow: hidden;
+		min-height: 0;
 	}
 	/* Mobile preview adjustments */
 	@media (max-width: 768px) {
 		.preview-header {
 			padding: 1rem;
 		}
+		.document-tab-container {
+			padding: 1rem;
+			height: auto;
+		}
+		
 		.doc-embed {
-			height: 400px; /* Smaller embed height on mobile */
+			height: 400px;
+			flex: none;
 		}
 		.empty-state {
 			min-height: 200px;

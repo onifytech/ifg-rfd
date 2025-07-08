@@ -6,12 +6,15 @@
 <div class="sidebar bg-gray-200">
 	<div class="sidebar-content">
 		<h1 class="sidebar-title">RFD Index</h1>
+		<div class="create-section">
+			<button onclick={onOpenCreateModal} class="btn btn-primary">
+				Create RFD
+			</button>
+		</div>
+		<div class="nav-divider"></div>
 		<nav class="sidebar-nav">
 			<ul class="nav-section">
-				<li><a href="/" class="nav-link active">All RFDs</a></li>
-				<li>
-					<button onclick={onOpenCreateModal} class="nav-link">Create RFD</button>
-				</li>
+				<li><a href="/" class="nav-link">All RFDs</a></li>
 				<li><a href="/?filter=recent" class="nav-link">Recent</a></li>
 			</ul>
 			<div class="nav-divider"></div>
@@ -40,7 +43,7 @@
 				<p class="break-words text-ellipsis">{user.name}</p>
 			</div>
 		</div>
-		<a href="/auth/logout" class="logout-btn">Sign Out</a>
+		<a href="/auth/logout" class="btn btn-ghost btn-sm">Sign Out</a>
 	</div>
 </div>
 
@@ -68,6 +71,16 @@
 		color: #1f2937;
 		margin: 0 0 1.5rem 0; /* rhythm-base bottom margin */
 		line-height: 3rem; /* rhythm-lg line height */
+	}
+
+	.create-section {
+		margin-bottom: 1.5rem; /* rhythm-base */
+	}
+
+	.create-section .btn {
+		width: 100%;
+		justify-content: center;
+		text-align: center;
 	}
 
 	.sidebar-nav {
@@ -113,12 +126,6 @@
 	.nav-link:hover {
 		background-color: #d1d5db;
 		color: #111827;
-	}
-
-	.nav-link.active {
-		background-color: #dbeafe;
-		font-weight: 500;
-		color: #1d4ed8;
 	}
 
 	.status-draft {
@@ -179,9 +186,6 @@
 		color: #6b7280;
 	}
 
-	.logout-btn:hover {
-		text-decoration: underline;
-	}
 
 	/* Hide sidebar on mobile */
 	@media (max-width: 768px) {
