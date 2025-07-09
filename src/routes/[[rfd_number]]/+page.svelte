@@ -138,6 +138,7 @@
 
 <Navbar
 	user={data.user}
+	{currentFilter}
 	{mobileNavOpen}
 	onToggleMobileNav={toggleMobileNav}
 	onCloseMobileNav={closeMobileNav}

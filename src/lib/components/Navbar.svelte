@@ -1,10 +1,23 @@
 <script lang="ts">
 	export let user: import('lucia').User;
+	export let currentFilter: { status: string | null; general: string | null } = { status: null, general: null };
 
 	export let mobileNavOpen: boolean = false;
 	export let onToggleMobileNav: () => void;
 	export let onCloseMobileNav: () => void;
 	export let onOpenCreateModal: () => void;
+
+	// Helper function to check if a link is active
+	function isActive(type: 'status' | 'general' | 'all', value?: string): boolean {
+		if (type === 'all') {
+			return !currentFilter.status && !currentFilter.general;
+		} else if (type === 'status') {
+			return currentFilter.status === value;
+		} else if (type === 'general') {
+			return currentFilter.general === value;
+		}
+		return false;
+	}
 </script>
 
 <!-- Mobile Navigation Header -->
@@ -57,50 +70,60 @@
 		</div>
 	</div>
 
+	<div class="mobile-nav-create-section">
+		<button
+			onclick={() => {
+				onOpenCreateModal();
+				onCloseMobileNav();
+			}}
+			class="btn btn-primary w-full"
+		>
+			Create RFD
+		</button>
+	</div>
+	<div class="mobile-nav-divider"></div>
 	<nav class="mobile-nav">
 		<ul class="mobile-nav-section">
-			<li><a href="/" class="mobile-nav-link active" onclick={onCloseMobileNav}>All RFDs</a></li>
+			<li><a href="/" class="mobile-nav-link {isActive('all') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>All RFDs</a></li>
 			<li>
-				<button
-					onclick={() => {
-						onOpenCreateModal();
-						onCloseMobileNav();
-					}}
-					class="btn btn-gradient w-full"
-				>
-					Create RFD
-				</button>
-			</li>
-			<li>
-				<a href="/?filter=recent" class="mobile-nav-link" onclick={onCloseMobileNav}>Recent</a>
+				<a href="/?filter=recent" class="mobile-nav-link {isActive('general', 'recent') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>Recent</a>
 			</li>
 		</ul>
 		<div class="mobile-nav-divider"></div>
 		<p class="mobile-nav-section-title">By Status</p>
 		<ul class="mobile-nav-section">
 			<li>
-				<a href="/?status=draft" class="mobile-nav-link status-draft" onclick={onCloseMobileNav}>
+				<a href="/?status=draft" class="mobile-nav-link status-draft {isActive('status', 'draft') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>
 					Draft
 				</a>
 			</li>
 			<li>
-				<a href="/?status=review" class="mobile-nav-link status-review" onclick={onCloseMobileNav}>
-					Review
+				<a href="/?status=open_for_review" class="mobile-nav-link status-review {isActive('status', 'open_for_review') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>
+					Open for Review
 				</a>
 			</li>
 			<li>
 				<a
-					href="/?status=approved"
-					class="mobile-nav-link status-approved"
+					href="/?status=accepted"
+					class="mobile-nav-link status-approved {isActive('status', 'accepted') ? 'mobile-nav-link-active' : ''}"
 					onclick={onCloseMobileNav}
 				>
-					Approved
+					Accepted
+				</a>
+			</li>
+			<li>
+				<a
+					href="/?status=enforced"
+					class="mobile-nav-link status-enforced {isActive('status', 'enforced') ? 'mobile-nav-link-active' : ''}"
+					onclick={onCloseMobileNav}
+				>
+					Enforced
 				</a>
 			</li>
 			<li>
 				<a
 					href="/?status=rejected"
-					class="mobile-nav-link status-rejected"
+					class="mobile-nav-link status-rejected {isActive('status', 'rejected') ? 'mobile-nav-link-active' : ''}"
 					onclick={onCloseMobileNav}
 				>
 					Rejected
@@ -108,11 +131,11 @@
 			</li>
 			<li>
 				<a
-					href="/?status=archived"
-					class="mobile-nav-link status-archived"
+					href="/?status=retracted"
+					class="mobile-nav-link status-archived {isActive('status', 'retracted') ? 'mobile-nav-link-active' : ''}"
 					onclick={onCloseMobileNav}
 				>
-					Archived
+					Retracted
 				</a>
 			</li>
 		</ul>
@@ -261,6 +284,11 @@
 			padding: 1.5rem;
 		}
 
+		.mobile-nav-create-section {
+			padding: 1.5rem;
+			padding-bottom: 0;
+		}
+
 		.mobile-nav-section {
 			list-style: none;
 			margin: 0 0 1rem 0;
@@ -302,10 +330,42 @@
 			color: #1f2937;
 		}
 
-		.mobile-nav-link.active {
-			background: #dbeafe;
-			color: #1d4ed8;
-			font-weight: 500;
+		.mobile-nav-link-active {
+			color: white !important;
+			font-weight: 600;
+		}
+
+		.mobile-nav-link-active:hover {
+			color: white !important;
+		}
+
+		.status-draft.mobile-nav-link-active {
+			background-color: #94a3b8 !important;
+		}
+
+		.status-review.mobile-nav-link-active {
+			background-color: #f59e0b !important;
+		}
+
+		.status-approved.mobile-nav-link-active {
+			background-color: #10b981 !important;
+		}
+
+		.status-enforced.mobile-nav-link-active {
+			background-color: #059669 !important;
+		}
+
+		.status-rejected.mobile-nav-link-active {
+			background-color: #ef4444 !important;
+		}
+
+		.status-archived.mobile-nav-link-active {
+			background-color: #6b7280 !important;
+		}
+
+		/* Fallback for non-status filters */
+		.mobile-nav-link-active:not([class*="status-"]) {
+			background-color: #3b82f6 !important;
 		}
 
 		.mobile-nav-link.status-draft {
@@ -318,6 +378,10 @@
 
 		.mobile-nav-link.status-approved {
 			border-left: 4px solid #10b981;
+		}
+
+		.mobile-nav-link.status-enforced {
+			border-left: 4px solid #059669;
 		}
 
 		.mobile-nav-link.status-rejected {

@@ -556,11 +556,11 @@
 			</div>
 		{/if}
 		<!-- Tab Navigation -->
-		<div class="tab-navigation border-b border-gray-200 bg-white">
-			<div class="flex">
+		<div class="tab-navigation border-b border-gray-200 bg-white overflow-x-auto">
+			<div class="flex min-w-max">
 				{#each tabs as tab (tab.id)}
 					<button
-						class="tab-button flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors {activeTab ===
+						class="tab-button flex items-center gap-2 px-4 md:px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap {activeTab ===
 						tab.id
 							? 'border-b-2 border-blue-500 text-blue-600'
 							: 'text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
@@ -899,14 +899,12 @@
 	}
 	/* Mobile tab adjustments */
 	@media (max-width: 768px) {
-		.tab-navigation .flex {
-			overflow-x: auto;
-			white-space: nowrap;
+		.tab-navigation {
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: thin;
 		}
 		.tab-button {
-			min-width: 120px;
-			padding: 0.5rem 1rem;
-			font-size: 0.875rem;
+			flex-shrink: 0;
 		}
 		.tab-content {
 			height: calc(100vh - 180px);
