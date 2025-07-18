@@ -62,7 +62,8 @@ export class GoogleDriveService {
 				requestBody: {
 					name: `RFD: ${data.title}`,
 					driveId: env.GOOGLE_SHARED_DRIVE_ID
-				}
+				},
+				supportsAllDrives: true
 			});
 
 			const newDocId = copyResponse.data.id!;
@@ -85,7 +86,8 @@ export class GoogleDriveService {
 			// Get the document URL
 			const fileResponse = await this.drive.files.get({
 				fileId: newDocId,
-				fields: 'webViewLink,webContentLink'
+				fields: 'webViewLink,webContentLink',
+				supportsAllDrives: true
 			});
 
 			return {
@@ -104,9 +106,13 @@ export class GoogleDriveService {
 	 */
 	async listTemplates() {
 		try {
+			const query = `name contains 'RFD Template' and mimeType='application/vnd.google-apps.document' and '${env.GOOGLE_SHARED_DRIVE_ID}' in parents`;
+
 			const response = await this.drive.files.list({
-				q: `name contains 'RFD Template' and mimeType='application/vnd.google-apps.document'`,
-				fields: 'files(id,name,createdTime,modifiedTime)'
+				q: query,
+				fields: 'files(id,name,createdTime,modifiedTime)',
+				supportsAllDrives: true,
+				includeItemsFromAllDrives: true
 			});
 			return response.data.files || [];
 		} catch (error) {
@@ -120,7 +126,10 @@ export class GoogleDriveService {
 	 */
 	private buildReplaceRequests(data: RFDTemplateData) {
 		const requests: Array<{
-			replaceAllText: { containsText: { text: string; matchCase: boolean }; replaceText: string };
+			replaceAllText: {
+				containsText: { text: string; matchCase: boolean };
+				replaceText: string;
+			};
 		}> = [];
 
 		// Replace common placeholders
@@ -154,7 +163,8 @@ export class GoogleDriveService {
 		try {
 			const response = await this.drive.files.get({
 				fileId: docId,
-				fields: 'id,name,createdTime,modifiedTime,owners,webViewLink'
+				fields: 'id,name,createdTime,modifiedTime,owners,webViewLink',
+				supportsAllDrives: true
 			});
 			return response.data;
 		} catch (error) {
@@ -176,7 +186,8 @@ export class GoogleDriveService {
 						role: 'writer',
 						type: 'user',
 						emailAddress: creatorEmail
-					}
+					},
+					supportsAllDrives: true
 				});
 			}
 
@@ -186,7 +197,8 @@ export class GoogleDriveService {
 				requestBody: {
 					role: 'commenter',
 					type: 'anyone'
-				}
+				},
+				supportsAllDrives: true
 			});
 
 			// Add specific team members with editor access if configured
@@ -204,7 +216,8 @@ export class GoogleDriveService {
 								role: 'writer',
 								type: 'user',
 								emailAddress: trimmedEmail
-							}
+							},
+							supportsAllDrives: true
 						});
 					} catch (permError) {
 						console.warn(`Failed to add editor permission for ${trimmedEmail}:`, permError);
