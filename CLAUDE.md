@@ -70,10 +70,21 @@ The `GoogleDriveService` class handles two authentication modes:
    - Creates RFDs in centralized service account Drive
    - Manages document permissions (creator gets editor, domain gets commenter)
    - Handles template-based document creation with placeholder replacement
+   - Supports domain-wide delegation to impersonate users for proper ownership
 
 2. **User OAuth Mode** (for template access):
    - Allows users to access their own templates
    - Fallback for read operations
+
+#### Domain-Wide Delegation Setup
+
+To enable the service account to impersonate users in your Google Workspace:
+
+1. In Google Admin Console, go to Security > API Controls > Domain-wide Delegation
+2. Add your service account's client ID with these OAuth scopes:
+   - https://www.googleapis.com/auth/drive
+   - https://www.googleapis.com/auth/documents
+3. The service account will then be able to impersonate users to create documents on their behalf
 
 ### Key Features Implementation
 

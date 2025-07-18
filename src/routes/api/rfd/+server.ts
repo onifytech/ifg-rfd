@@ -28,7 +28,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		// Create Google Drive service using service account for RFD storage
-		const driveService = GoogleDriveService.createServiceInstance();
+		// Impersonate the user creating the RFD for proper ownership
+		const driveService = GoogleDriveService.createServiceInstance(user.email);
 
 		// Create RFD from template
 		const rfdData = {

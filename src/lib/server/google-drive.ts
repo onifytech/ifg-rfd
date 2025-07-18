@@ -13,18 +13,22 @@ export class GoogleDriveService {
 	private docs;
 	private isServiceAccount: boolean;
 
-	constructor(accessToken?: string) {
+	constructor(accessToken?: string, impersonateEmail?: string) {
 		let auth;
 
 		if (env.GOOGLE_SERVICE_ACCOUNT_KEY) {
 			// Use service account for RFD storage
 			this.isServiceAccount = true;
-			auth = new google.auth.GoogleAuth({
-				credentials: JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_KEY),
+			const credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_KEY);
+			auth = new google.auth.JWT({
+				email: credentials.client_email,
+				key: credentials.private_key,
 				scopes: [
 					'https://www.googleapis.com/auth/drive',
 					'https://www.googleapis.com/auth/documents'
-				]
+				],
+				// Enable domain-wide delegation by impersonating a user
+				subject: impersonateEmail
 			});
 		} else if (accessToken) {
 			// Fallback to user OAuth for templates/reading
@@ -43,6 +47,7 @@ export class GoogleDriveService {
 
 	/**
 	 * Create a new RFD document from template using service account
+	 * Note: When using domain-wide delegation, the service account should be impersonating the userEmail
 	 */
 	async createRFDFromTemplate(templateId: string, data: RFDTemplateData, userEmail?: string) {
 		try {
@@ -56,7 +61,7 @@ export class GoogleDriveService {
 				fileId: templateId,
 				requestBody: {
 					name: `RFD: ${data.title}`,
-					parents: [env.GOOGLE_DRIVE_RFD_FOLDER_ID || ''] // Store in service account's specified folder
+					driveId: env.GOOGLE_SHARED_DRIVE_ID
 				}
 			});
 
@@ -214,9 +219,10 @@ export class GoogleDriveService {
 
 	/**
 	 * Create a service account instance for RFD management
+	 * @param impersonateEmail - Optional email to impersonate using domain-wide delegation
 	 */
-	static createServiceInstance(): GoogleDriveService {
-		return new GoogleDriveService();
+	static createServiceInstance(impersonateEmail?: string): GoogleDriveService {
+		return new GoogleDriveService(undefined, impersonateEmail);
 	}
 
 	/**
