@@ -111,11 +111,9 @@
 
 						{#if parseTags(rfd.tags).length > 0}
 							<div class="tags">
+								<span class="text-sm">Tags:</span>
 								{#each parseTags(rfd.tags) as tag (tag)}
-									<span class="text-sm">Tags:</span><span
-										class="tag"
-										style="background-color: {generateTagColor(tag)}">{tag}</span
-									>
+									<span class="tag" style="background-color: {generateTagColor(tag)}">{tag}</span>
 								{/each}
 							</div>
 						{/if}
