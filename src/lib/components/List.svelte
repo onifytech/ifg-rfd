@@ -1,28 +1,6 @@
 <script lang="ts">
+	import type { RFD } from '$lib/types/rfd';
 	import { getStatusColor, getStatusLabel } from '$lib/utils/statusUtils';
-
-	type RFD = {
-		id: string;
-		rfdNumber: number;
-		title: string;
-		summary: string | null;
-		status: string;
-		authorId: string;
-		googleDocUrl: string;
-		tags: string | null;
-		authorName: string | null;
-		authorEmail: string | null;
-		createdAt: string;
-		updatedAt: string;
-		endorsementCount: number;
-		userHasEndorsed: boolean;
-		endorsers: Array<{
-			userId: string;
-			name: string | null;
-			picture: string | null;
-			createdAt: string;
-		}>;
-	};
 
 	export let rfds: RFD[] = [];
 	export let onRfdSelect: (rfd: RFD) => void;
@@ -96,14 +74,7 @@
 	}
 </script>
 
-<div class="content bg-white">
-	<div class="header">
-		<div class="header-content">
-			<h1>{getFilterDescription()}</h1>
-			<p class="rfd-count">{rfds.length} RFD{rfds.length !== 1 ? 's' : ''}</p>
-		</div>
-	</div>
-
+<div class="content column is-one-third bg-white">
 	{#if rfds.length === 0}
 		<div class="empty-state">
 			<p>No RFDs found{currentFilter.status || currentFilter.general ? ' for this filter' : ''}.</p>
@@ -118,67 +89,22 @@
 					<button class="rfd-item-button" onclick={() => handleRfdClick(rfd)}>
 						<div class="rfd-header">
 							<div class="title-section">
-								<div class="title-row">
-									<span class="rfd-number">{formatRfdNumber(rfd.rfdNumber)}</span>
-									<h2>{rfd.title}</h2>
-								</div>
-								<a
-									href={rfd.googleDocUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="external-link"
-									onclick={(e) => e.stopPropagation}
-								>
-									Open in Google Docs
-								</a>
-							</div>
-							<div class="status-section">
-								<span class="status-badge" style="background-color: {getStatusColor(rfd.status)};">
-									{getStatusLabel(rfd.status)}
-								</span>
-							</div>
-						</div>
-
-						{#if rfd.summary}
-							<p class="summary">{rfd.summary}</p>
-						{/if}
-
-						<div class="rfd-meta">
-							<span class="date">Created {formatDate(rfd.createdAt)}</span>
-							{#if rfd.updatedAt !== rfd.createdAt}
-								<span class="date">• Updated {formatDate(rfd.updatedAt)}</span>
-							{/if}
-							<div class="pump-section">
-								<span class="pump-count">
-									🔥 {rfd.endorsementCount} pump{rfd.endorsementCount !== 1 ? 's' : ''}
-								</span>
-								{#if rfd.endorsers && rfd.endorsers.length > 0}
-									<div class="pumper-avatars">
-										{#each rfd.endorsers.slice(0, 5) as endorser, index (endorser.userId)}
-											{#if endorser.picture}
-												<img
-													src={endorser.picture}
-													alt={endorser.name || 'User'}
-													class="pumper-avatar"
-													style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
-													title={endorser.name || 'User'}
-												/>
-											{:else}
-												<div
-													class="pumper-avatar pumper-avatar-placeholder"
-													style="z-index: {5 - index}; margin-left: {index > 0 ? '-0.5rem' : '0'}"
-													title={endorser.name || 'User'}
-												>
-													{(endorser.name || 'U').charAt(0).toUpperCase()}
-												</div>
-											{/if}
-										{/each}
-										{#if rfd.endorsers.length > 5}
-											<div class="pumper-more" style="margin-left: -0.5rem">
-												+{rfd.endorsers.length - 5}
-											</div>
-										{/if}
+								<div class="title-row mb-4 flex justify-between">
+									<div class="title-section">
+										<h2>{rfd.title}</h2>
+										<p class="!text-xs">{rfd.authorName || 'Unknown'}</p>
 									</div>
+									<div class="status-section text-right">
+										<span
+											class="status-badge"
+											style="background-color: {getStatusColor(rfd.status)};"
+										>
+											{getStatusLabel(rfd.status)}
+										</span>
+									</div>
+								</div>
+								{#if rfd.summary}
+									<p class="summary">{rfd.summary}</p>
 								{/if}
 							</div>
 						</div>
@@ -186,10 +112,24 @@
 						{#if parseTags(rfd.tags).length > 0}
 							<div class="tags">
 								{#each parseTags(rfd.tags) as tag (tag)}
-									<span class="tag" style="background-color: {generateTagColor(tag)}">{tag}</span>
+									<span class="text-sm">Tags:</span><span
+										class="tag"
+										style="background-color: {generateTagColor(tag)}">{tag}</span
+									>
 								{/each}
 							</div>
 						{/if}
+						<div class="rfd-footer flex">
+							<div class="number-section">
+								<span class="rfd-number">{formatRfdNumber(rfd.rfdNumber)}</span>
+							</div>
+							<div class="pump-section">
+								<span class="pump-count">
+									<span class="icon"><i class="fa fa-heart text-red-600"></i></span>
+									{rfd.endorsementCount}
+								</span>
+							</div>
+						</div>
 					</button>
 				</li>
 			{/each}
@@ -198,55 +138,6 @@
 </div>
 
 <style>
-	.content {
-		width: 50%;
-		padding: 1.5rem; /* rhythm-base */
-		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
-		height: 100vh;
-	}
-
-	/* Mobile responsiveness */
-	@media (max-width: 768px) {
-		.content {
-			width: 100%;
-			height: calc(100vh - 4rem); /* Account for mobile nav header */
-			min-height: 60vh;
-			padding: 1rem;
-			order: 2;
-		}
-	}
-
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		margin-bottom: 1.5rem; /* rhythm-base */
-		border-bottom: 1px solid #e5e7eb;
-		padding-bottom: 0.75rem; /* rhythm-sm */
-		flex-shrink: 0; /* Prevent header from shrinking */
-	}
-
-	.header-content {
-		flex: 1;
-	}
-
-	.header h1 {
-		margin: 0;
-		font-size: 1.875rem; /* 30px - 3xl */
-		font-weight: 700;
-		color: #111827;
-		line-height: 3rem; /* rhythm-lg line height */
-	}
-
-	.rfd-count {
-		margin: 0;
-		font-size: 0.875rem;
-		color: #6b7280;
-		line-height: 1.5rem;
-	}
-
 	.clear-filter-link {
 		color: #3b82f6;
 		text-decoration: none;
@@ -272,14 +163,13 @@
 		margin: 0;
 		overflow-y: auto;
 		flex: 1; /* Take remaining space */
-		padding-right: 0.75rem; /* rhythm-sm for scrollbar spacing */
 	}
 
 	.rfd-item {
 		border: 1px solid #e5e7eb;
 		border-radius: 8px;
-		padding: 1.5rem; /* rhythm-base */
-		margin-bottom: 0.75rem; /* rhythm-sm */
+		padding: 1rem;
+		margin-bottom: 1rem;
 		transition:
 			border-color 0.2s,
 			box-shadow 0.2s,
@@ -291,7 +181,7 @@
 	@media (max-width: 768px) {
 		.rfd-item {
 			padding: 1rem;
-			margin-bottom: 0.5rem;
+			margin-bottom: 1rem;
 		}
 
 		.rfd-header {
@@ -313,15 +203,6 @@
 		.status-badge {
 			margin-left: 0;
 			align-self: flex-start;
-		}
-
-		.rfd-meta {
-			flex-direction: column;
-			gap: 0.25rem;
-		}
-
-		.external-link {
-			font-size: 0.875rem;
 		}
 	}
 
@@ -350,34 +231,33 @@
 		text-decoration: none;
 	}
 
-	.rfd-header {
+	/* .rfd-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		margin-bottom: 0.75rem; /* rhythm-sm */
-	}
+		margin-bottom: 0.75rem; 
+	} */
 
-	.title-section {
+	/* .title-section {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 0.375rem; /* rhythm-xs */
+		gap: 0.375rem;
 	}
 
 	.title-row {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem; /* rhythm-sm */
-	}
+		gap: 0.75rem;
+	} */
 
 	.rfd-number {
-		background-color: #f3f4f6;
-		color: #374151;
-		padding: 2px 6px;
-		border-radius: 3px;
-		font-size: 11px;
-		font-weight: 600;
-		text-transform: uppercase;
+		background-color: #333;
+		color: white;
+		padding: 4px 8px;
+		border-radius: 5px;
+		font-size: 12px;
+		text-transform: lowercase;
 		letter-spacing: 0.05em;
 		white-space: nowrap;
 	}
@@ -389,17 +269,6 @@
 		color: #111827;
 		line-height: 1.5rem; /* rhythm base line height */
 		transition: color 0.2s;
-	}
-
-	.external-link {
-		font-size: 14px;
-		color: #3b82f6;
-		text-decoration: none;
-		align-self: flex-start;
-	}
-
-	.external-link:hover {
-		text-decoration: underline;
 	}
 
 	.status-section {
@@ -422,19 +291,6 @@
 		margin: 0 0 0.75rem 0; /* rhythm-sm bottom */
 	}
 
-	.rfd-meta {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem; /* rhythm-sm */
-		margin-bottom: 0.75rem; /* rhythm-sm */
-		align-items: center;
-	}
-
-	.date {
-		font-size: 14px;
-		color: #9ca3af;
-	}
-
 	.pump-section {
 		display: flex;
 		align-items: center;
@@ -445,46 +301,6 @@
 		font-size: 14px;
 		color: #dc2626;
 		font-weight: 500;
-	}
-
-	.pumper-avatars {
-		display: flex;
-		align-items: center;
-		position: relative;
-	}
-
-	.pumper-avatar {
-		width: 1.5rem;
-		height: 1.5rem;
-		border-radius: 50%;
-		border: 2px solid white;
-		position: relative;
-		object-fit: cover;
-	}
-
-	.pumper-avatar-placeholder {
-		background: #6b7280;
-		color: white;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.6rem;
-		font-weight: 600;
-	}
-
-	.pumper-more {
-		background: #e5e7eb;
-		color: #6b7280;
-		border-radius: 50%;
-		width: 1.5rem;
-		height: 1.5rem;
-		border: 2px solid white;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.6rem;
-		font-weight: 600;
-		position: relative;
 	}
 
 	.tags {

@@ -1,39 +1,20 @@
 <script lang="ts">
-	import { getStatusColor, getStatusLabel, statusOptions, getStatusDescription, shouldShowStatusDescription, getStatusColorScheme } from '$lib/utils/statusUtils';
+	import {
+		getStatusLabel,
+		statusOptions,
+		getStatusDescription,
+		shouldShowStatusDescription,
+		getStatusColorScheme
+	} from '$lib/utils/statusUtils';
 	import { toast } from '$lib/stores/toast.js';
-	type User = {
-		id: string;
-		name: string;
-		email: string;
-		role: string;
-		picture?: string | null;
-	};
-	type RFD = {
-		id: string;
-		rfdNumber: number;
-		title: string;
-		summary: string | null;
-		status: string;
-		authorId: string;
-		authorName: string | null;
-		authorEmail: string | null;
-		googleDocUrl: string;
-		tags: string | null;
-		createdAt: string;
-		updatedAt: string;
-		endorsementCount: number;
-		userHasEndorsed: boolean;
-		endorsers: Array<{
-			userId: string;
-			name: string | null;
-			picture: string | null;
-			createdAt: string;
-		}>;
-	};
+	import type { RFD } from '$lib/types/rfd';
+	import type { User } from '$lib/types/user';
+
 	export let selectedRfd: RFD | null = null;
 	export let isMobileModal: boolean = false;
 	export let user: User | null = null;
 	export let onRfdUpdate: ((updatedRfd: RFD) => void) | null = null;
+
 	let isEndorsing = false;
 	let isEditing = false;
 	let isLoading = false;
@@ -47,24 +28,30 @@
 	let comment = '';
 	let error = '';
 	// Tab management
-	let activeTab = 'metadata';
+	let activeTab = 'document';
 	const tabs = [
-		{ id: 'metadata', label: 'Metadata', icon: '📋' },
-		{ id: 'document', label: 'RFD Document', icon: '📄' },
-		{ id: 'pumping', label: "Who's Pumping!", icon: '🔥' }
+		// { id: 'metadata', label: 'Metadata', icon: '📋' },
+		{ id: 'document', label: 'Preview', icon: 'fa-file' },
+		{ id: 'pumping', label: 'Hearters', icon: 'fa-heart' }
 	];
 	// Permission checks
 	$: isAdmin = user?.role === 'admin';
 	$: isOwner = user?.id === selectedRfd?.authorId;
 	$: canEdit = isAdmin || isOwner;
-	$: canChangeStatus = isAdmin || (isOwner && (selectedRfd?.status === 'draft' || selectedRfd?.status === 'open_for_review'));
+	$: canChangeStatus =
+		isAdmin ||
+		(isOwner && (selectedRfd?.status === 'draft' || selectedRfd?.status === 'open_for_review'));
 	$: isDraft = selectedRfd?.status === 'draft';
 	$: isOpenForReview = selectedRfd?.status === 'open_for_review';
-	
+
 	// Status description reactive variables
 	$: currentStatusDescription = selectedRfd ? getStatusDescription(selectedRfd.status) : null;
-	$: showStatusDescription = selectedRfd ? shouldShowStatusDescription(selectedRfd.status, isOwner, isAdmin) : false;
-	$: statusColorScheme = currentStatusDescription ? getStatusColorScheme(currentStatusDescription.colorScheme) : null;
+	$: showStatusDescription = selectedRfd
+		? shouldShowStatusDescription(selectedRfd.status, isOwner, isAdmin)
+		: false;
+	$: statusColorScheme = currentStatusDescription
+		? getStatusColorScheme(currentStatusDescription.colorScheme)
+		: null;
 
 	// Filter status options based on user permissions
 	$: availableStatusOptions = (() => {
@@ -75,10 +62,14 @@
 		if (isOwner && selectedRfd) {
 			if (selectedRfd.status === 'draft') {
 				// Draft creators can only change to open_for_review
-				return statusOptions.filter(option => option.value === 'draft' || option.value === 'open_for_review');
+				return statusOptions.filter(
+					(option) => option.value === 'draft' || option.value === 'open_for_review'
+				);
 			} else if (selectedRfd.status === 'open_for_review') {
 				// Open for review creators can only change back to draft
-				return statusOptions.filter(option => option.value === 'draft' || option.value === 'open_for_review');
+				return statusOptions.filter(
+					(option) => option.value === 'draft' || option.value === 'open_for_review'
+				);
 			}
 		}
 
@@ -99,10 +90,10 @@
 	async function handlePump() {
 		if (!selectedRfd || isEndorsing) return;
 		isEndorsing = true;
-		const action = selectedRfd.userHasEndorsed ? 'unpump' : 'pump';
+		const action = selectedRfd.userHasEndorsed ? 'unheart' : 'heart';
 		try {
 			const response = await fetch(`/api/rfd/${selectedRfd.id}/endorsement`, {
-				method: action === 'pump' ? 'POST' : 'DELETE',
+				method: action === 'heart' ? 'POST' : 'DELETE',
 				headers: {
 					'Content-Type': 'application/json'
 				}
@@ -116,15 +107,15 @@
 					onRfdUpdate(result.rfd);
 				}
 				// Show success toast
-				const message = action === 'pump' ? 'RFD pumped! 🔥' : 'Pump removed';
+				const message = action === 'heart' ? 'RFD hearted!' : 'Heart removed';
 				toast.success(message);
 			} else {
 				const errorData = await response.json();
-				toast.error(errorData.error || 'Failed to update pump');
+				toast.error(errorData.error || 'Failed to update heart');
 			}
 		} catch (error) {
-			console.error('Pump error:', error);
-			toast.error('Failed to update pump');
+			console.error('Heart error:', error);
+			toast.error('Failed to update heart');
 		} finally {
 			isEndorsing = false;
 		}
@@ -220,7 +211,8 @@
 	$: filteredTags = availableTags.filter(
 		(tag) => tag.toLowerCase().includes(tagInput.toLowerCase()) && !editedTags.includes(tag)
 	);
-	function startEditing() {
+
+	function openCreateModal() {
 		if (!selectedRfd || !canEdit) return;
 		isEditing = true;
 		editedTitle = selectedRfd.title;
@@ -233,7 +225,17 @@
 		error = '';
 		// Load available tags for autocomplete
 		loadAvailableTags();
+		// Prevent body scroll when modal is open
+		document.body.style.overflow = 'hidden';
 	}
+
+	function closeCreateModal() {
+		isEditing = false;
+		// Restore body scroll
+		document.body.style.overflow = '';
+		return;
+	}
+
 	function cancelEditing() {
 		isEditing = false;
 		editedTitle = '';
@@ -281,6 +283,8 @@
 				})
 			});
 			const result = await response.json();
+
+			console.log(result.rfd);
 			if (!response.ok) {
 				throw new Error(result.error || 'Failed to update RFD');
 			}
@@ -289,8 +293,10 @@
 			}
 
 			// Show appropriate success message
-			const wasPublished = selectedRfd?.status === 'draft' && result.rfd.status === 'open_for_review';
-			const wasMadePrivate = selectedRfd?.status === 'open_for_review' && result.rfd.status === 'draft';
+			const wasPublished =
+				selectedRfd?.status === 'draft' && result.rfd.status === 'open_for_review';
+			const wasMadePrivate =
+				selectedRfd?.status === 'open_for_review' && result.rfd.status === 'draft';
 
 			let successMessage = 'RFD updated successfully!';
 			if (wasPublished) {
@@ -310,263 +316,278 @@
 	}
 </script>
 
-<div
-	class="preview-container {isMobileModal
-		? 'mobile-modal-preview'
-		: ''} border-l border-gray-300 bg-white"
->
+<div class="column is-two-thirds {isMobileModal ? 'mobile-modal-preview' : ''} bg-white">
 	{#if selectedRfd}
-		<div class="preview-header flex flex-col md:flex-row md:items-center md:justify-between">
-			<div class="mb-4 md:mb-0">
-				<div>
-					<div>
-						<div class="mb-2 flex items-center gap-4">
-							<span
-								class="rfd-number rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-800"
-								>{formatRfdNumber(selectedRfd.rfdNumber)}</span
-							>
-							<h3 class="max-w-72 truncate font-bold ...">
-								{selectedRfd.title}
-							</h3>
-							<span
-								class="status-tag inline-block rounded-full px-3 py-1 text-xs font-medium text-white"
-								style="background-color: {getStatusColor(selectedRfd.status)}"
-							>
-								{getStatusLabel(selectedRfd.status)}
-							</span>
-						</div>
+		<div class="preview-header">
+			<h1 class="title is-4">{selectedRfd.title}</h1>
+			{#if selectedRfd.summary}
+				<p class="mb-5">{selectedRfd.summary}</p>
+			{/if}
+			<div class="fixed-grid has-2-cols">
+				<div class="grid">
+					<div class="cell is-row-start-1">
+						<div class="mb-1 text-sm font-bold">Number</div>
+						<div class="text-sm">{formatRfdNumber(selectedRfd.rfdNumber)}</div>
+					</div>
+					<div class="cell">
+						<div class="mb-1 text-sm font-bold">Status</div>
+						<div class="text-sm">{getStatusLabel(selectedRfd.status)}</div>
+					</div>
+
+					<div class="cell is-row-start-2">
+						<div class="mb-1 text-sm font-bold">Author</div>
+						<div class="text-sm">{selectedRfd.authorName || 'Unknown'}</div>
+					</div>
+
+					<div class="cell">
+						<div class="mb-1 text-sm font-bold">Docs ID</div>
+						<div class="text-sm">{selectedRfd.id}</div>
+					</div>
+
+					<div class="cell is-row-start-3">
+						<div class="mb-1 text-sm font-bold">Last Updated</div>
+						<div class="text-sm">{formatDate(selectedRfd.updatedAt)}</div>
+					</div>
+					<div class="cell">
+						<div class="mb-1 text-sm font-bold">Created</div>
+						<div class="text-sm">{formatDate(selectedRfd.createdAt)}</div>
 					</div>
 				</div>
 			</div>
-			<div>
-				<div>
-					<div class="flex flex-col gap-2 md:flex-row">
-						<div>
-							<button
-								class="btn btn-light"
-								onclick={handleCopyLink}
-								title="Copy link to this RFD"
+			{#if parseTags(selectedRfd.tags).length > 0}
+				<div class="mb-5">
+					<div class="mb-3 text-sm font-bold">Tags</div>
+					<div class="flex flex-wrap gap-2">
+						{#each parseTags(selectedRfd.tags) as tag (tag)}
+							<span
+								class="rounded-full px-2 py-1 text-xs font-medium text-white"
+								style="background-color: {generateTagColor(tag)}"
 							>
-								<span>🔗</span>
-								<span>Copy Link</span>
-							</button>
-						</div>
-						<div>
-							<button
-								class="btn {selectedRfd.userHasEndorsed ? 'btn-danger' : 'btn-light'}"
-								onclick={handlePump}
-								disabled={isEndorsing}
-							>
-								<span>🔥</span>
-								<span>
-									{#if isEndorsing}
-										Processing...
-									{:else if selectedRfd.userHasEndorsed}
-										Pumped ({selectedRfd.endorsementCount})
-									{:else}
-										Pump ({selectedRfd.endorsementCount})
-									{/if}
-								</span>
-							</button>
-						</div>
-						<div>
-							<a
-								href={selectedRfd.googleDocUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="btn btn-primary"
-							>
-								<span>📄</span>
-								<span>Open in Google Docs</span>
-							</a>
-						</div>
-						{#if canEdit}
-							<div>
-								<button
-									class="btn btn-secondary"
-									onclick={startEditing}
-									disabled={isEditing}
-								>
-									<span>✏️</span>
-									<span>Edit</span>
-								</button>
-							</div>
-						{/if}
+								{tag}
+							</span>
+						{/each}
 					</div>
 				</div>
+			{/if}
+			<div class="mb-5 flex flex-col gap-4 md:flex-row">
+				<div>
+					<button class="btn btn-light" onclick={handleCopyLink} title="Copy link to this RFD">
+						<span class="icon"><i class="fa fa-link text-xl"></i></span>
+						<span>Copy Link</span>
+					</button>
+				</div>
+				<div>
+					<button
+						class="btn {selectedRfd.userHasEndorsed
+							? 'btn-danger text-white'
+							: 'btn-light text-red-600'}"
+						onclick={handlePump}
+						disabled={isEndorsing}
+					>
+						<span class="icon"><i class="fa fa-heart text-xl"></i></span>
+						<span>
+							{#if isEndorsing}
+								Processing...
+							{:else if selectedRfd.userHasEndorsed}
+								Hearted ({selectedRfd.endorsementCount})
+							{:else}
+								Heart ({selectedRfd.endorsementCount})
+							{/if}
+						</span>
+					</button>
+				</div>
+				<div>
+					<a
+						href={selectedRfd.googleDocUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn btn-primary !hover:no-underline"
+					>
+						<span class="icon"><i class="fa fa-file text-xl"></i></span>
+						<span>Open in Google Docs</span>
+					</a>
+				</div>
+				{#if canEdit}
+					<div>
+						<button class="btn btn-secondary" onclick={openCreateModal}>
+							<span class="icon"><i class="fa fa-pencil text-xl"></i></span>
+							<span>Edit</span>
+						</button>
+					</div>
+				{/if}
 			</div>
 		</div>
-		{#if showStatusDescription && currentStatusDescription && statusColorScheme}
-			<div class="status-notice border {statusColorScheme.border} {statusColorScheme.bg} p-4 mb-4 rounded-lg">
-				<div class="flex items-start gap-3">
-					<span class="{statusColorScheme.icon} text-lg">{currentStatusDescription.icon}</span>
-					<div>
-						<h4 class="text-sm font-semibold {statusColorScheme.title} mb-1">{currentStatusDescription.title}</h4>
-						<p class="text-sm {statusColorScheme.text}">
-							{currentStatusDescription.description}
-						</p>
-					</div>
-				</div>
-			</div>
-		{/if}
 		{#if isEditing}
-			<div class="edit-form-container border-b border-gray-200 bg-gray-50 p-6">
-				<div class="edit-form">
-					<h3 class="mb-4 text-lg font-semibold">Edit RFD</h3>
-					<div class="form-group mb-4">
-						<label for="title-edit" class="mb-2 block text-sm font-medium text-gray-700"
-							>Title:</label
-						>
-						<input
-							id="title-edit"
-							type="text"
-							bind:value={editedTitle}
-							class="form-input w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							disabled={isLoading || (!isOwner && !isAdmin)}
-						/>
-					</div>
-					<div class="form-group mb-4">
-						<label for="summary-edit" class="mb-2 block text-sm font-medium text-gray-700"
-							>Summary:</label
-						>
-						<textarea
-							id="summary-edit"
-							bind:value={editedSummary}
-							rows="3"
-							class="form-input w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							disabled={isLoading || (!isOwner && !isAdmin)}
-						></textarea>
-					</div>
-					<div class="form-group mb-4">
-						<label for="tags-edit" class="mb-2 block text-sm font-medium text-gray-700">Tags:</label
-						>
-						<div class="relative">
-							<div class="tags-container mb-2 flex flex-wrap gap-2">
-								{#each editedTags as tag (tag)}
-									<span
-										class="tag-chip inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white"
-										style="background-color: {generateTagColor(tag)}"
-									>
-										{tag}
-										<button
-											type="button"
-											onclick={() => removeTag(tag)}
-											class="ml-1 text-white hover:text-gray-200"
-											disabled={isLoading || (!isOwner && !isAdmin)}
-										>
-											×
-										</button>
-									</span>
-								{/each}
+			<div class="modal is-active">
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<div class="modal-background" role="button" tabindex="0" onclick={closeCreateModal}></div>
+				<div class="modal-card">
+					<header class="modal-card-head">
+						<p class="modal-card-title">Edit RFD</p>
+						<button class="delete" aria-label="close" onclick={closeCreateModal}></button>
+					</header>
+					<section class="modal-card-body">
+						<div class="edit-form">
+							<div class="field">
+								<label class="label" for="title">RFD Title</label>
+								<div class="control">
+									<input
+										class="input"
+										type="text"
+										id="title"
+										bind:value={editedTitle}
+										placeholder="Brief, descriptive title for your RFD"
+										disabled={isLoading || (!isOwner && !isAdmin)}
+									/>
+								</div>
 							</div>
-							<input
-								id="tags-edit"
-								type="text"
-								bind:value={tagInput}
-								oninput={handleTagInput}
-								onkeydown={handleTagInput}
-								onblur={() => setTimeout(() => (showTagDropdown = false), 150)}
-								onfocus={() => (showTagDropdown = tagInput.length > 0)}
-								placeholder="Add tags (press Enter or comma to add)"
-								class="form-input w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-								disabled={isLoading || (!isOwner && !isAdmin)}
-							/>
-							{#if showTagDropdown && filteredTags.length > 0}
-								<div
-									class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg"
-								>
-									{#each filteredTags.slice(0, 10) as tag (tag)}
-										<button
-											type="button"
-											class="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-											onclick={() => addTag(tag)}
+							<div class="field">
+								<label class="label" for="summary">Summary</label>
+								<div class="control">
+									<textarea
+										class="textarea"
+										id="summary"
+										bind:value={editedSummary}
+										disabled={isLoading || (!isOwner && !isAdmin)}
+									></textarea>
+								</div>
+							</div>
+							<div class="field">
+								<label class="label" for="tags">Tags</label>
+								<div class="relative">
+									<div class="tags-container mb-2 flex flex-wrap gap-2">
+										{#each editedTags as tag (tag)}
+											<span
+												class="tag-chip inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white"
+												style="background-color: {generateTagColor(tag)}"
+											>
+												{tag}
+												<button
+													type="button"
+													onclick={() => removeTag(tag)}
+													class="ml-1 text-white hover:text-gray-200"
+													disabled={isLoading || (!isOwner && !isAdmin)}
+												>
+													×
+												</button>
+											</span>
+										{/each}
+									</div>
+									<input
+										id="tags"
+										type="text"
+										bind:value={tagInput}
+										oninput={handleTagInput}
+										onkeydown={handleTagInput}
+										onblur={() => setTimeout(() => (showTagDropdown = false), 150)}
+										onfocus={() => (showTagDropdown = tagInput.length > 0)}
+										placeholder="Add tags (press Enter or comma to add)"
+										class="form-input w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+										disabled={isLoading || (!isOwner && !isAdmin)}
+									/>
+									{#if showTagDropdown && filteredTags.length > 0}
+										<div
+											class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-gray-300 bg-white shadow-lg"
 										>
-											{tag}
-										</button>
-									{/each}
+											{#each filteredTags.slice(0, 10) as tag (tag)}
+												<button
+													type="button"
+													class="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+													onclick={() => addTag(tag)}
+												>
+													{tag}
+												</button>
+											{/each}
+										</div>
+									{/if}
+								</div>
+								<p class="mt-2 flex items-center text-xs text-gray-500">
+									Press Enter or comma to add tags. Click × to remove.
+								</p>
+							</div>
+							{#if canChangeStatus}
+								<div class="field">
+									<label for="status-edit" class="mb-2 block text-sm font-medium text-gray-700">
+										{isDraft
+											? 'Publish RFD - Change Status:'
+											: isOpenForReview && isOwner
+												? 'Status (Draft ↔ Review):'
+												: 'Status:'}
+									</label>
+									{#if isDraft}
+										<p class="mb-2 text-sm text-gray-600">
+											Change to "Open for Review" to make this RFD visible to all team members for
+											feedback.
+										</p>
+									{:else if isOpenForReview && isOwner}
+										<p class="mb-2 text-sm text-gray-600">
+											You can change back to "Draft" to make it private again, or leave it for admin
+											review.
+										</p>
+									{/if}
+									<select
+										id="status-edit"
+										bind:value={selectedStatus}
+										class="form-select w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+										disabled={isLoading}
+									>
+										{#each availableStatusOptions as option (option.value)}
+											<option value={option.value}>{option.label}</option>
+										{/each}
+									</select>
+								</div>
+								<div class="field">
+									<label for="comment-edit" class="mb-2 block text-sm font-medium text-gray-700"
+										>Comment (optional):</label
+									>
+									<textarea
+										id="comment-edit"
+										bind:value={comment}
+										rows="2"
+										placeholder="Add a comment about this change..."
+										class="form-input w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+										disabled={isLoading}
+									></textarea>
+								</div>
+							{/if}
+							{#if error}
+								<div
+									class="error mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700"
+								>
+									{error}
 								</div>
 							{/if}
 						</div>
-					</div>
-					{#if canChangeStatus}
-						<div class="form-group mb-4">
-							<label for="status-edit" class="mb-2 block text-sm font-medium text-gray-700">
-								{isDraft ? 'Publish RFD - Change Status:' : isOpenForReview && isOwner ? 'Status (Draft ↔ Review):' : 'Status:'}
-							</label>
-							{#if isDraft}
-								<p class="text-sm text-gray-600 mb-2">
-									Change to "Open for Review" to make this RFD visible to all team members for feedback.
-								</p>
-							{:else if isOpenForReview && isOwner}
-								<p class="text-sm text-gray-600 mb-2">
-									You can change back to "Draft" to make it private again, or leave it for admin review.
-								</p>
-							{/if}
-							<select
-								id="status-edit"
-								bind:value={selectedStatus}
-								class="form-select w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+					</section>
+					<footer class="modal-card-foot">
+						<!-- Actions -->
+						<div class="buttons">
+							<button
+								type="button"
+								class="button is-success"
+								onclick={saveChanges}
 								disabled={isLoading}
 							>
-								{#each availableStatusOptions as option (option.value)}
-									<option value={option.value}>{option.label}</option>
-								{/each}
-							</select>
+								{isLoading ? 'Saving...' : 'Save Changes'}
+							</button>
+							<button class="button" onclick={cancelEditing} disabled={isLoading}>Cancel</button>
 						</div>
-						<div class="form-group mb-4">
-							<label for="comment-edit" class="mb-2 block text-sm font-medium text-gray-700"
-								>Comment (optional):</label
-							>
-							<textarea
-								id="comment-edit"
-								bind:value={comment}
-								rows="2"
-								placeholder="Add a comment about this change..."
-								class="form-input w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-								disabled={isLoading}
-							></textarea>
-						</div>
-					{/if}
-					{#if error}
-						<div
-							class="error mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700"
-						>
-							{error}
-						</div>
-					{/if}
-					<div class="button-group flex gap-3">
-						<button
-							type="button"
-							class="btn btn-primary"
-							onclick={saveChanges}
-							disabled={isLoading}
-						>
-							{isLoading ? 'Saving...' : 'Save Changes'}
-						</button>
-						<button
-							type="button"
-							class="btn btn-outline"
-							onclick={cancelEditing}
-							disabled={isLoading}
-						>
-							Cancel
-						</button>
-					</div>
+					</footer>
 				</div>
 			</div>
 		{/if}
 		<!-- Tab Navigation -->
-		<div class="tab-navigation border-b border-gray-200 bg-white overflow-x-auto">
+		<div class="tab-navigation overflow-x-auto border-b border-gray-200 bg-white">
 			<div class="flex min-w-max">
 				{#each tabs as tab (tab.id)}
 					<button
-						class="tab-button flex items-center gap-2 px-4 md:px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap {activeTab ===
+						class="tab-button flex items-center gap-1 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors md:px-6 {activeTab ===
 						tab.id
-							? 'border-b-2 border-blue-500 text-blue-600'
-							: 'text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
+							? 'border-b-2 !border-blue-500 !text-blue-600'
+							: '!text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
 						onclick={() => setActiveTab(tab.id)}
 					>
-						<span>{tab.icon}</span>
+						<span class="icon"><i class={`fa ${tab.icon}`}></i></span>
 						<span>{tab.label}</span>
 						{#if tab.id === 'pumping' && selectedRfd.endorsementCount > 0}
 							<span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
@@ -579,117 +600,9 @@
 		</div>
 		<!-- Tab Content -->
 		<div class="tab-content overflow-y-auto">
-			{#if activeTab === 'metadata'}
-				<div class="p-6">
-					{#if selectedRfd.summary}
-						<div class="mb-6">
-							<h3 class="mb-3 text-lg font-semibold">Summary</h3>
-							<div class="rounded-lg bg-gray-50 p-4">
-								<p>{selectedRfd.summary}</p>
-							</div>
-						</div>
-					{/if}
-					<div class="mb-6">
-						<h3 class="mb-3 text-lg font-semibold">Details</h3>
-						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div>
-								<div class="mb-3">
-									<div class="mb-1 block text-sm font-medium text-gray-700">Status</div>
-									<div>
-										<span
-											class="inline-block rounded-full px-3 py-1 text-xs font-medium text-white"
-											style="background-color: {getStatusColor(selectedRfd.status)}"
-										>
-											{getStatusLabel(selectedRfd.status)}
-										</span>
-									</div>
-								</div>
-							</div>
-							<div>
-								<div class="mb-3">
-									<div class="mb-1 block text-sm font-medium text-gray-700">Creator</div>
-									<div>
-										<span class="font-medium">{selectedRfd.authorName || 'Unknown'}</span>
-									</div>
-								</div>
-							</div>
-							<div>
-								<div class="mb-3">
-									<div class="mb-1 block text-sm font-medium text-gray-700">Created</div>
-									<div>
-										<span class="text-gray-600">{formatDate(selectedRfd.createdAt)}</span>
-									</div>
-								</div>
-							</div>
-							<div>
-								<div class="mb-3">
-									<div class="mb-1 block text-sm font-medium text-gray-700">Last Updated</div>
-									<div>
-										<span class="text-gray-600">{formatDate(selectedRfd.updatedAt)}</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-					{#if parseTags(selectedRfd.tags).length > 0}
-						<div class="mb-6">
-							<h3 class="mb-3 text-lg font-semibold">Tags</h3>
-							<div class="flex flex-wrap gap-2">
-								{#each parseTags(selectedRfd.tags) as tag (tag)}
-									<span
-										class="rounded-full px-2 py-1 text-xs font-medium text-white"
-										style="background-color: {generateTagColor(tag)}"
-									>
-										{tag}
-									</span>
-								{/each}
-							</div>
-						</div>
-					{/if}
-
-					<!-- Document Actions -->
-					<div class="mb-6">
-						<h3 class="mb-3 text-lg font-semibold">Document</h3>
-						<div class="flex flex-col gap-2 sm:flex-row">
-							<button
-								onclick={() => setActiveTab('document')}
-								class="btn btn-primary"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-									/>
-								</svg>
-								Read RFD
-							</button>
-							<a
-								href={selectedRfd.googleDocUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="btn btn-success"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-									/>
-								</svg>
-								Open Google Docs
-							</a>
-						</div>
-					</div>
-				</div>
-			{:else if activeTab === 'document'}
+			{#if activeTab === 'document'}
 				<div class="document-tab-container">
-					<div class="document-header">
-						<h3 class="text-lg font-semibold">Google Document</h3>
-					</div>
-					<div class="doc-embed overflow-hidden rounded-lg border border-gray-200">
+					<div class="doc-embed overflow-hidden">
 						<iframe
 							src="{selectedRfd.googleDocUrl}/preview?embedded=true&rm=minimal&widget=true&chrome=false"
 							title="RFD Document Preview"
@@ -699,33 +612,37 @@
 					</div>
 				</div>
 			{:else if activeTab === 'pumping'}
-				<div class="p-6">
+				<div class="p-5">
 					<div class="mb-6">
 						<div class="mb-4 flex items-center justify-between">
-							<h3 class="text-lg font-semibold">Who's Pumping! 🔥</h3>
+							<h3 class="text-lg font-semibold">
+								Who's Hearters! <span class="icon"><i class="fa fa-heart text-red-600"></i></span>
+							</h3>
 							<div class="text-right">
 								<p class="text-sm text-gray-600">
-									{selectedRfd.endorsementCount} pump{selectedRfd.endorsementCount !== 1 ? 's' : ''}
+									{selectedRfd.endorsementCount} heart{selectedRfd.endorsementCount !== 1
+										? 's'
+										: ''}
 									total
 								</p>
 							</div>
 						</div>
-						<div class="mb-6">
+						<div class="mb-6 text-center">
 							<button
-								class="w-full rounded-lg border-2 border-dashed px-4 py-3 font-medium transition-colors {selectedRfd.userHasEndorsed
-									? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
-									: 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'}"
+								class="rounded-lg border-2 border-dashed px-4 py-3 font-medium transition-colors {selectedRfd.userHasEndorsed
+									? '!hover:bg-red-100 !border-red-300 !bg-red-50 !text-red-700'
+									: '!hover:bg-gray-100 !border-gray-300 !bg-gray-50 !text-gray-700'}"
 								onclick={handlePump}
 								disabled={isEndorsing}
 							>
-								<span class="mr-2 text-xl">🔥</span>
+								<span class="icon"><i class="fa fa-heart text-xl"></i></span>
 								<span>
 									{#if isEndorsing}
 										Processing...
 									{:else if selectedRfd.userHasEndorsed}
-										You've pumped this RFD! Click to unpump.
+										You've hearted this RFD! Click to unheart.
 									{:else}
-										Pump this RFD!
+										Click to heart this RFD!
 									{/if}
 								</span>
 							</button>
@@ -750,17 +667,17 @@
 										<div class="flex-1">
 											<p class="font-medium text-gray-900">{endorser.name || 'Unknown User'}</p>
 											<p class="text-sm text-gray-500">
-												Pumped on {formatDate(endorser.createdAt)}
+												hearted on {formatDate(endorser.createdAt)}
 											</p>
 										</div>
-										<span class="text-xl">🔥</span>
+										<span class="icon"><i class="fa fa-heart text-xl text-red-600"></i></span>
 									</div>
 								{/each}
 							</div>
 						{:else}
 							<div class="py-8 text-center">
 								<div class="mb-3 text-4xl">😭</div>
-								<p class="text-gray-500">No one has pumped this RFD yet.</p>
+								<p class="text-gray-500">No one has hearted this RFD yet.</p>
 								<p class="mt-1 text-sm text-gray-400">Be the first to show your support!</p>
 							</div>
 						{/if}
@@ -807,11 +724,6 @@
 			display: none; /* Hide regular preview on mobile */
 		}
 	}
-	.preview-header {
-		border-bottom: 1px solid #e5e7eb;
-		padding: 1.5rem;
-		margin-bottom: 0;
-	}
 	.rfd-number {
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -825,15 +737,6 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		padding: 1.5rem;
-	}
-
-	.document-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 1rem;
-		flex-shrink: 0;
 	}
 
 	.doc-embed {
@@ -843,11 +746,7 @@
 	}
 	/* Mobile preview adjustments */
 	@media (max-width: 768px) {
-		.preview-header {
-			padding: 1rem;
-		}
 		.document-tab-container {
-			padding: 1rem;
 			height: auto;
 		}
 

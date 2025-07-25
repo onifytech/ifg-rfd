@@ -1,6 +1,9 @@
 <script lang="ts">
 	export let user: import('lucia').User;
-	export let currentFilter: { status: string | null; general: string | null } = { status: null, general: null };
+	export let currentFilter: { status: string | null; general: string | null } = {
+		status: null,
+		general: null
+	};
 
 	export let mobileNavOpen: boolean = false;
 	export let onToggleMobileNav: () => void;
@@ -19,6 +22,44 @@
 		return false;
 	}
 </script>
+
+<nav class="navbar" aria-label="main navigation">
+	<div class="container">
+		<div class="navbar-brand">
+			<h1 class="navbar-item title is-4">RFD Index</h1>
+		</div>
+
+		<div class="navbar-menu">
+			<div class="navbar-end">
+				<div class="navbar-item">{user.name}</div>
+				<div class="navbar-item">
+					{#if user.avatarBase64}
+						<img src={user.avatarBase64} alt={user.name} class="rounded-full" />
+					{:else if user.picture}
+						<img src={user.picture} alt={user.name} class="rounded-full" />
+					{:else}
+						<div class="mobile-avatar mobile-avatar-placeholder">
+							{user.name.charAt(0).toUpperCase()}
+						</div>
+					{/if}
+				</div>
+				<div class="navbar-item">
+					<button class="button is-light" onclick={onOpenCreateModal}
+						><span class="icon"><i class="fa fa-plus"></i></span> &emsp;Create RFD
+					</button>
+				</div>
+				<div class="navbar-item">
+					<a class="button is-light" href="/auth/logout">
+						<span class="icon">
+							<i class="fa fa-right-from-bracket"></i>
+						</span>
+						&emsp;Log out
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</nav>
 
 <!-- Mobile Navigation Header -->
 <div class="mobile-nav-header">
@@ -76,36 +117,65 @@
 				onOpenCreateModal();
 				onCloseMobileNav();
 			}}
+			class="button is-light w-full"
+			><span class="icon"><i class="fa fa-plus"></i></span> &emsp;Create RFD
+		</button>
+		<!-- <button
+			
 			class="btn btn-primary w-full"
 		>
 			Create RFD
-		</button>
+		</button> -->
 	</div>
 	<div class="mobile-nav-divider"></div>
 	<nav class="mobile-nav">
 		<ul class="mobile-nav-section">
-			<li><a href="/" class="mobile-nav-link {isActive('all') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>All RFDs</a></li>
 			<li>
-				<a href="/?filter=recent" class="mobile-nav-link {isActive('general', 'recent') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>Recent</a>
+				<a
+					href="/"
+					class="mobile-nav-link {isActive('all') ? 'mobile-nav-link-active' : ''}"
+					onclick={onCloseMobileNav}>All RFDs</a
+				>
+			</li>
+			<li>
+				<a
+					href="/?filter=recent"
+					class="mobile-nav-link {isActive('general', 'recent') ? 'mobile-nav-link-active' : ''}"
+					onclick={onCloseMobileNav}>Recent</a
+				>
 			</li>
 		</ul>
 		<div class="mobile-nav-divider"></div>
 		<p class="mobile-nav-section-title">By Status</p>
 		<ul class="mobile-nav-section">
 			<li>
-				<a href="/?status=draft" class="mobile-nav-link status-draft {isActive('status', 'draft') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>
+				<a
+					href="/?status=draft"
+					class="mobile-nav-link status-draft {isActive('status', 'draft')
+						? 'mobile-nav-link-active'
+						: ''}"
+					onclick={onCloseMobileNav}
+				>
 					Draft
 				</a>
 			</li>
 			<li>
-				<a href="/?status=open_for_review" class="mobile-nav-link status-review {isActive('status', 'open_for_review') ? 'mobile-nav-link-active' : ''}" onclick={onCloseMobileNav}>
+				<a
+					href="/?status=open_for_review"
+					class="mobile-nav-link status-review {isActive('status', 'open_for_review')
+						? 'mobile-nav-link-active'
+						: ''}"
+					onclick={onCloseMobileNav}
+				>
 					Open for Review
 				</a>
 			</li>
 			<li>
 				<a
 					href="/?status=accepted"
-					class="mobile-nav-link status-approved {isActive('status', 'accepted') ? 'mobile-nav-link-active' : ''}"
+					class="mobile-nav-link status-approved {isActive('status', 'accepted')
+						? 'mobile-nav-link-active'
+						: ''}"
 					onclick={onCloseMobileNav}
 				>
 					Accepted
@@ -114,7 +184,9 @@
 			<li>
 				<a
 					href="/?status=enforced"
-					class="mobile-nav-link status-enforced {isActive('status', 'enforced') ? 'mobile-nav-link-active' : ''}"
+					class="mobile-nav-link status-enforced {isActive('status', 'enforced')
+						? 'mobile-nav-link-active'
+						: ''}"
 					onclick={onCloseMobileNav}
 				>
 					Enforced
@@ -123,7 +195,9 @@
 			<li>
 				<a
 					href="/?status=rejected"
-					class="mobile-nav-link status-rejected {isActive('status', 'rejected') ? 'mobile-nav-link-active' : ''}"
+					class="mobile-nav-link status-rejected {isActive('status', 'rejected')
+						? 'mobile-nav-link-active'
+						: ''}"
 					onclick={onCloseMobileNav}
 				>
 					Rejected
@@ -132,7 +206,9 @@
 			<li>
 				<a
 					href="/?status=retracted"
-					class="mobile-nav-link status-archived {isActive('status', 'retracted') ? 'mobile-nav-link-active' : ''}"
+					class="mobile-nav-link status-archived {isActive('status', 'retracted')
+						? 'mobile-nav-link-active'
+						: ''}"
 					onclick={onCloseMobileNav}
 				>
 					Retracted
@@ -279,7 +355,6 @@
 			font-size: 0.875rem;
 		}
 
-
 		.mobile-nav {
 			padding: 1.5rem;
 		}
@@ -364,7 +439,7 @@
 		}
 
 		/* Fallback for non-status filters */
-		.mobile-nav-link-active:not([class*="status-"]) {
+		.mobile-nav-link-active:not([class*='status-']) {
 			background-color: #3b82f6 !important;
 		}
 
@@ -391,6 +466,5 @@
 		.mobile-nav-link.status-archived {
 			border-left: 4px solid #6b7280;
 		}
-
 	}
 </style>

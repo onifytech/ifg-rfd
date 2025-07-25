@@ -1,36 +1,14 @@
 <script lang="ts">
 	import Preview from '$lib/components/Preview.svelte';
-	import List from '$lib/components/List.svelte';
 	import CreateRFD from '$lib/components/CreateRFD.svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
-	import Sidebar from '$lib/components/Sidebar.svelte';
 	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
+	import Searchbar from '$lib/components/Searchbar.svelte';
+	import ColumSection from '$lib/components/ColumSection.svelte';
+	import type { RFD } from '$lib/types/rfd';
 
 	export let data: PageData;
-
-	type RFD = {
-		id: string;
-		rfdNumber: number;
-		title: string;
-		summary: string | null;
-		status: string;
-		authorId: string;
-		authorName: string | null;
-		authorEmail: string | null;
-		googleDocUrl: string;
-		tags: string | null;
-		createdAt: string;
-		updatedAt: string;
-		endorsementCount: number;
-		userHasEndorsed: boolean;
-		endorsers: Array<{
-			userId: string;
-			name: string | null;
-			picture: string | null;
-			createdAt: string;
-		}>;
-	};
 
 	let selectedRfd: RFD | null = null;
 	let showCreateModal = false;
@@ -185,43 +163,30 @@
 		</div>
 	</div>
 {:else}
-	<section>
-		<Sidebar user={data.user} onOpenCreateModal={openCreateModal} {currentFilter} />
-		<List {rfds} onRfdSelect={handleRfdSelect} {selectedRfd} {currentFilter} />
-		<Preview {selectedRfd} user={data.user} onRfdUpdate={handleRfdUpdate} />
+	<section class="section">
+		<div class="container">
+			<Searchbar {currentFilter} {data} />
+			<hr />
+			<ColumSection {data} />
+		</div>
 	</section>
 {/if}
 
 <!-- Create RFD Modal -->
-{#if showCreateModal}
-	<div
-		class="modal-overlay"
-		role="button"
-		tabindex="0"
-		onclick={closeCreateModal}
-		onkeydown={(e) => {
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
-				closeCreateModal();
-			}
-		}}
-	>
-		<div
-			class="modal-content"
-			role="dialog"
-			tabindex="-1"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-		>
-			<div class="modal-header">
-				<h2 class="modal-title">Create New RFD</h2>
-			</div>
-			<div class="modal-body">
-				<CreateRFD onClose={closeCreateModal} onRfdCreated={handleRfdCreated} />
-			</div>
-		</div>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class={`modal ${showCreateModal ? 'is-active' : ''}`}>
+	<div class="modal-background" role="button" tabindex="0" onclick={closeCreateModal}></div>
+	<div class="modal-card">
+		<header class="modal-card-head">
+			<p class="modal-card-title">Create New RFD</p>
+			<button class="delete" aria-label="close" onclick={closeCreateModal}></button>
+		</header>
+		<section class="modal-card-body">
+			<CreateRFD onClose={closeCreateModal} onRfdCreated={handleRfdCreated} />
+		</section>
+		<footer class="modal-card-foot"></footer>
 	</div>
-{/if}
+</div>
 
 <!-- Mobile RFD Preview Modal -->
 {#if showMobilePreview && selectedRfd}
@@ -267,72 +232,6 @@
 {/if}
 
 <style lang="postcss">
-	section {
-		display: flex;
-		flex-direction: row;
-		gap: 1.5rem; /* rhythm-base */
-		min-height: 100vh;
-	}
-
-	/* Mobile responsive layout adjustments */
-	@media (max-width: 768px) {
-		section {
-			flex-direction: column;
-			gap: 0;
-			padding-top: 4rem; /* Space for fixed header */
-		}
-	}
-
-	/* Modal Styles */
-	.modal-overlay {
-		position: fixed !important;
-		top: 0 !important;
-		left: 0 !important;
-		right: 0 !important;
-		bottom: 0 !important;
-		width: 100vw !important;
-		height: 100vh !important;
-		background-color: rgba(0, 0, 0, 0.5) !important;
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		z-index: 9999 !important;
-		padding: 1rem;
-		margin: 0 !important;
-		transform: none !important;
-	}
-
-	.modal-content {
-		background-color: white;
-		border-radius: 0.5rem;
-		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-		width: 100%;
-		max-width: 42rem;
-		max-height: 90vh;
-		overflow: hidden;
-		margin: 0 1rem;
-		position: relative;
-	}
-
-	/* Mobile modal adjustments */
-	@media (max-width: 768px) {
-		.modal-content {
-			max-width: 95vw;
-			max-height: 95vh;
-			margin: 0;
-			border-radius: 0.25rem;
-		}
-
-		.modal-header {
-			padding: 1rem;
-		}
-
-		.modal-title {
-			font-size: 1.25rem;
-			line-height: 1.5rem;
-		}
-	}
-
 	/* Mobile Preview Modal Styles */
 	.mobile-preview-overlay {
 		position: fixed;
