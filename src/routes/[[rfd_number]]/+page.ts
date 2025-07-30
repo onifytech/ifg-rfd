@@ -10,7 +10,7 @@ export const load: PageLoad = async ({ parent, fetch, params, url }) => {
 
 	// Parse RFD number from params if provided
 	const rfdNumber = params.rfd_number ? parseInt(params.rfd_number) : null;
-	
+
 	// Parse filter parameters from URL
 	const statusFilter = url.searchParams.get('status');
 	const generalFilter = url.searchParams.get('filter'); // for 'recent', etc.
@@ -30,8 +30,9 @@ export const load: PageLoad = async ({ parent, fetch, params, url }) => {
 			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 			rfds = rfds
 				.filter((rfd: { updatedAt: string }) => new Date(rfd.updatedAt) >= thirtyDaysAgo)
-				.sort((a: { updatedAt: string }, b: { updatedAt: string }) => 
-					new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+				.sort(
+					(a: { updatedAt: string }, b: { updatedAt: string }) =>
+						new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
 				);
 		}
 

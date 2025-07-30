@@ -50,9 +50,7 @@
 				<span class="toast-icon">{typeIcon[type]}</span>
 				<span class="toast-message">{message}</span>
 			</div>
-			<button class="toast-close" onclick={handleClose} aria-label="Close notification">
-				×
-			</button>
+			<button class="toast-close" onclick={handleClose} aria-label="Close notification"> × </button>
 		</div>
 	</div>
 {/if}
@@ -72,7 +70,9 @@
 		justify-content: space-between;
 		padding: 0.75rem 1rem;
 		border-radius: 0.5rem;
-		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+		box-shadow:
+			0 10px 15px -3px rgba(0, 0, 0, 0.1),
+			0 4px 6px -2px rgba(0, 0, 0, 0.05);
 		animation: slideIn 0.3s ease-out;
 		min-width: 16rem;
 	}

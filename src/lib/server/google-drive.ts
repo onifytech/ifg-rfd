@@ -231,6 +231,42 @@ export class GoogleDriveService {
 	}
 
 	/**
+	 * Add user as content manager to the shared drive
+	 * This gives them permission to create and manage content in the shared drive
+	 */
+	async addUserAsContentManager(userEmail: string) {
+		try {
+			if (!env.GOOGLE_SHARED_DRIVE_ID) {
+				throw new Error('Shared drive ID not configured');
+			}
+
+			// Create permission for the user as content manager (organizer role in shared drives)
+			await this.drive.permissions.create({
+				fileId: env.GOOGLE_SHARED_DRIVE_ID,
+				requestBody: {
+					role: 'fileOrganizer',
+					type: 'user',
+					emailAddress: userEmail
+				},
+				supportsAllDrives: true
+			});
+
+			console.log(`Added ${userEmail} as content manager to shared drive`);
+		} catch (error) {
+			// Check if permission already exists
+			if (error instanceof Error) {
+				const googleError = error as { errors?: Array<{ reason?: string }> };
+				if (googleError?.errors?.[0]?.reason === 'userPermissionAlreadyExists') {
+					console.log(`User ${userEmail} already has access to shared drive`);
+					return;
+				}
+			}
+			console.error(`Error adding ${userEmail} as content manager:`, error);
+			throw new Error('Failed to add user as content manager');
+		}
+	}
+
+	/**
 	 * Create a service account instance for RFD management
 	 * @param impersonateEmail - Optional email to impersonate using domain-wide delegation
 	 */

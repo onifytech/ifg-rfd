@@ -15,16 +15,16 @@ function createToastStore() {
 	const add = (message: string, type: ToastType = 'info', duration: number = 3000) => {
 		const id = Math.random().toString(36).substr(2, 9);
 		const toast: ToastMessage = { id, message, type, duration };
-		
-		update(toasts => [...toasts, toast]);
-		
+
+		update((toasts) => [...toasts, toast]);
+
 		// Auto-remove after duration
 		if (duration > 0) {
 			setTimeout(() => {
-				update(toasts => toasts.filter(t => t.id !== id));
+				update((toasts) => toasts.filter((t) => t.id !== id));
 			}, duration);
 		}
-		
+
 		return id;
 	};
 
@@ -32,7 +32,7 @@ function createToastStore() {
 		subscribe,
 		add,
 		remove: (id: string) => {
-			update(toasts => toasts.filter(t => t.id !== id));
+			update((toasts) => toasts.filter((t) => t.id !== id));
 		},
 		clear: () => {
 			update(() => []);

@@ -6,6 +6,7 @@ import { user } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import { downloadImageAsBase64, shouldUpdateAvatar } from '$lib/server/avatar-sync';
+import { GoogleDriveService } from '$lib/server/google-drive';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const code = url.searchParams.get('code');
@@ -107,6 +108,16 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 				refreshToken: tokens.refreshToken(),
 				tokenExpiresAt: tokens.accessTokenExpiresAt()
 			});
+
+			// Add the new user as content manager to the shared drive
+			try {
+				const driveService = GoogleDriveService.createServiceInstance();
+				await driveService.addUserAsContentManager(googleUser.email);
+				console.log(`Successfully added ${googleUser.email} as content manager to shared drive`);
+			} catch (error) {
+				console.error(`Failed to add ${googleUser.email} as content manager:`, error);
+				// Don't fail the auth flow if adding to shared drive fails
+			}
 
 			const session = await lucia.createSession(userId, {});
 			const sessionCookie = lucia.createSessionCookie(session.id);

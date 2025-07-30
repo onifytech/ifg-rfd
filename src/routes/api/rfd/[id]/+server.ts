@@ -79,7 +79,6 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 			return json({ error: 'User not found' }, { status: 404 });
 		}
 
-
 		// Parse request body
 		const body = await request.json();
 		const { title, summary, status, tags, comment } = body;
@@ -108,10 +107,14 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 		}
 
 		// Check permissions for status changes
-		
-		if (status && status !== existingRfd.status && !canUserPublishDraft(user.id, dbUser.role, existingRfd.authorId, existingRfd.status, status)) {
+
+		if (
+			status &&
+			status !== existingRfd.status &&
+			!canUserPublishDraft(user.id, dbUser.role, existingRfd.authorId, existingRfd.status, status)
+		) {
 			let errorMessage = 'Permission denied';
-			
+
 			if (existingRfd.authorId === user.id) {
 				// User is the creator
 				if (existingRfd.status === 'draft') {
@@ -125,7 +128,7 @@ export const PUT: RequestHandler = async ({ params, request, cookies }) => {
 				// User is not the creator
 				errorMessage = 'Only the creator or administrators can change RFD status';
 			}
-			
+
 			return json({ error: errorMessage }, { status: 403 });
 		}
 

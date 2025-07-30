@@ -3,7 +3,13 @@
  * Provides consistent status colors, labels, and mappings across the application
  */
 
-export type RfdStatus = 'draft' | 'open_for_review' | 'accepted' | 'enforced' | 'rejected' | 'retracted';
+export type RfdStatus =
+	| 'draft'
+	| 'open_for_review'
+	| 'accepted'
+	| 'enforced'
+	| 'rejected'
+	| 'retracted';
 
 export type StatusOption = {
 	value: RfdStatus;
@@ -45,7 +51,8 @@ export const statusDescriptions: Record<RfdStatus, StatusDescription> = {
 	draft: {
 		title: 'Draft RFD - Private',
 		icon: '⚠️',
-		description: 'This RFD is currently in draft status and is only visible to you. Change the status to "Open for Review" to make it visible for team feedback.',
+		description:
+			'This RFD is currently in draft status and is only visible to you. Change the status to "Open for Review" to make it visible for team feedback.',
 		colorScheme: 'yellow',
 		visibility: 'private',
 		canEdit: true,
@@ -55,7 +62,8 @@ export const statusDescriptions: Record<RfdStatus, StatusDescription> = {
 	open_for_review: {
 		title: 'Open for Review - Public',
 		icon: '👀',
-		description: 'This RFD is visible to all team members for feedback. You can change it back to "Draft" to make it private, or leave it for admin review.',
+		description:
+			'This RFD is visible to all team members for feedback. You can change it back to "Draft" to make it private, or leave it for admin review.',
 		colorScheme: 'blue',
 		visibility: 'public',
 		canEdit: true,
@@ -65,7 +73,8 @@ export const statusDescriptions: Record<RfdStatus, StatusDescription> = {
 	accepted: {
 		title: 'Accepted RFD',
 		icon: '✅',
-		description: 'This RFD has been reviewed and accepted by administrators. It represents an approved design decision.',
+		description:
+			'This RFD has been reviewed and accepted by administrators. It represents an approved design decision.',
 		colorScheme: 'green',
 		visibility: 'public',
 		canEdit: false,
@@ -75,7 +84,8 @@ export const statusDescriptions: Record<RfdStatus, StatusDescription> = {
 	enforced: {
 		title: 'Enforced RFD',
 		icon: '🚀',
-		description: 'This RFD has been accepted and is now being actively enforced. Implementation is in progress or completed.',
+		description:
+			'This RFD has been accepted and is now being actively enforced. Implementation is in progress or completed.',
 		colorScheme: 'emerald',
 		visibility: 'public',
 		canEdit: false,
@@ -85,7 +95,8 @@ export const statusDescriptions: Record<RfdStatus, StatusDescription> = {
 	rejected: {
 		title: 'Rejected RFD',
 		icon: '❌',
-		description: 'This RFD has been reviewed and rejected by administrators. It will not be implemented as proposed.',
+		description:
+			'This RFD has been reviewed and rejected by administrators. It will not be implemented as proposed.',
 		colorScheme: 'red',
 		visibility: 'public',
 		canEdit: false,
@@ -95,7 +106,8 @@ export const statusDescriptions: Record<RfdStatus, StatusDescription> = {
 	retracted: {
 		title: 'Retracted RFD',
 		icon: '🗃️',
-		description: 'This RFD has been retracted by the author or administrators. It is archived and no longer active.',
+		description:
+			'This RFD has been retracted by the author or administrators. It is archived and no longer active.',
 		colorScheme: 'gray',
 		visibility: 'public',
 		canEdit: false,
@@ -172,14 +184,18 @@ export function getStatusDescription(status: string): StatusDescription | null {
 /**
  * Check if status description should be shown to user
  */
-export function shouldShowStatusDescription(status: string, isOwner: boolean, isAdmin: boolean): boolean {
+export function shouldShowStatusDescription(
+	status: string,
+	isOwner: boolean,
+	isAdmin: boolean
+): boolean {
 	const description = getStatusDescription(status);
 	if (!description) return false;
-	
+
 	if (isAdmin) return true; // Admins see all descriptions
 	if (isOwner && description.showToOwner) return true;
 	if (!isOwner && description.showToOthers) return true;
-	
+
 	return false;
 }
 
@@ -231,6 +247,6 @@ export function getStatusColorScheme(colorScheme: string): ColorScheme {
 			text: 'text-gray-700'
 		}
 	};
-	
+
 	return schemes[colorScheme] || schemes.gray;
 }
