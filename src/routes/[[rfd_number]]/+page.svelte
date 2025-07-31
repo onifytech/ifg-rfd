@@ -17,11 +17,7 @@
 	let showMobilePreview = false;
 	let rfds = data.rfds;
 	let currentFilter = data.currentFilter;
-	let isLoading = false;
-
-	onMount(() => {
-		isLoading = false;
-	});
+	let isLoading = true;
 
 	// Reactive update when data changes (e.g., when navigating to a new filter)
 	$: {
@@ -33,10 +29,17 @@
 		}
 	}
 
-	// Auto-select RFD if targetRfd is provided
 	onMount(() => {
-		if (data.targetRfd) {
-			selectedRfd = data.targetRfd;
+		try {
+			isLoading = false;
+
+			// Auto-select RFD if targetRfd is provided
+			if (data.targetRfd) {
+				selectedRfd = data.targetRfd;
+			}
+		} catch (error) {
+			console.error('Loading error:', error);
+			isLoading = false;
 		}
 	});
 
