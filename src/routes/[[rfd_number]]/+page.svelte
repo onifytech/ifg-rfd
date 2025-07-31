@@ -7,6 +7,7 @@
 	import Searchbar from '$lib/components/Searchbar.svelte';
 	import ColumSection from '$lib/components/ColumSection.svelte';
 	import type { RFD } from '$lib/types/rfd';
+	import Loading from '$lib/components/Loading.svelte';
 
 	export let data: PageData;
 
@@ -16,6 +17,11 @@
 	let showMobilePreview = false;
 	let rfds = data.rfds;
 	let currentFilter = data.currentFilter;
+	let isLoading = false;
+
+	onMount(() => {
+		isLoading = false;
+	});
 
 	// Reactive update when data changes (e.g., when navigating to a new filter)
 	$: {
@@ -114,120 +120,128 @@
 
 <svelte:window on:resize={handleResize} />
 
-<Navbar
-	user={data.user}
-	{currentFilter}
-	{mobileNavOpen}
-	onToggleMobileNav={toggleMobileNav}
-	onCloseMobileNav={closeMobileNav}
-	onOpenCreateModal={openCreateModal}
-/>
-
-<!-- Show RFD not found message if applicable -->
-{#if data.rfdNotFound}
-	<div class="flex min-h-screen items-center justify-center bg-gray-50">
-		<div class="mx-auto max-w-md px-6 text-center">
-			<div class="mb-6">
-				<svg
-					class="mx-auto h-12 w-12 text-gray-400"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-					/>
-				</svg>
-			</div>
-			<h1 class="mb-4 text-2xl font-bold text-gray-900">RFD {data.targetRfdNumber} Not Found</h1>
-			<p class="mb-8 text-gray-600">
-				The requested RFD number does not exist or could not be loaded.
-			</p>
-			<div class="space-y-3">
-				<a
-					href="/"
-					class="block w-full rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-				>
-					View All RFDs
-				</a>
-				<button
-					onclick={openCreateModal}
-					class="block w-full rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
-				>
-					Create New RFD
-				</button>
-			</div>
-		</div>
-	</div>
+{#if isLoading}
+	<Loading />
 {:else}
-	<section class="section">
-		<div class="container">
-			<Searchbar {currentFilter} {data} />
-			<hr />
-			<ColumSection {data} />
+	<div class="page-content">
+		<Navbar
+			user={data.user}
+			{currentFilter}
+			{mobileNavOpen}
+			onToggleMobileNav={toggleMobileNav}
+			onCloseMobileNav={closeMobileNav}
+			onOpenCreateModal={openCreateModal}
+		/>
+
+		<!-- Show RFD not found message if applicable -->
+		{#if data.rfdNotFound}
+			<div class="flex min-h-screen items-center justify-center bg-gray-50">
+				<div class="mx-auto max-w-md px-6 text-center">
+					<div class="mb-6">
+						<svg
+							class="mx-auto h-12 w-12 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							/>
+						</svg>
+					</div>
+					<h1 class="mb-4 text-2xl font-bold text-gray-900">
+						RFD {data.targetRfdNumber} Not Found
+					</h1>
+					<p class="mb-8 text-gray-600">
+						The requested RFD number does not exist or could not be loaded.
+					</p>
+					<div class="space-y-3">
+						<a
+							href="/"
+							class="block w-full rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+						>
+							View All RFDs
+						</a>
+						<button
+							onclick={openCreateModal}
+							class="block w-full rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
+						>
+							Create New RFD
+						</button>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<section class="section">
+				<div class="container">
+					<Searchbar {currentFilter} {data} />
+					<hr />
+					<ColumSection {data} />
+				</div>
+			</section>
+		{/if}
+
+		<!-- Create RFD Modal -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div class={`modal ${showCreateModal ? 'is-active' : ''}`}>
+			<div class="modal-background" role="button" tabindex="0" onclick={closeCreateModal}></div>
+			<div class="modal-card">
+				<header class="modal-card-head">
+					<p class="modal-card-title">Create New RFD</p>
+					<button class="delete" aria-label="close" onclick={closeCreateModal}></button>
+				</header>
+				<section class="modal-card-body">
+					<CreateRFD onClose={closeCreateModal} onRfdCreated={handleRfdCreated} />
+				</section>
+				<footer class="modal-card-foot"></footer>
+			</div>
 		</div>
-	</section>
-{/if}
 
-<!-- Create RFD Modal -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class={`modal ${showCreateModal ? 'is-active' : ''}`}>
-	<div class="modal-background" role="button" tabindex="0" onclick={closeCreateModal}></div>
-	<div class="modal-card">
-		<header class="modal-card-head">
-			<p class="modal-card-title">Create New RFD</p>
-			<button class="delete" aria-label="close" onclick={closeCreateModal}></button>
-		</header>
-		<section class="modal-card-body">
-			<CreateRFD onClose={closeCreateModal} onRfdCreated={handleRfdCreated} />
-		</section>
-		<footer class="modal-card-foot"></footer>
-	</div>
-</div>
-
-<!-- Mobile RFD Preview Modal -->
-{#if showMobilePreview && selectedRfd}
-	<div
-		class="mobile-preview-overlay"
-		role="button"
-		tabindex="0"
-		onclick={closeMobilePreview}
-		onkeydown={(e) => {
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
-				closeMobilePreview();
-			}
-		}}
-	>
-		<div
-			class="mobile-preview-content"
-			role="dialog"
-			tabindex="-1"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-		>
-			<div class="mobile-preview-header">
-				<h2 class="mobile-preview-title">RFD Preview</h2>
-				<button
-					class="mobile-preview-close"
-					onclick={closeMobilePreview}
-					aria-label="Close preview"
+		<!-- Mobile RFD Preview Modal -->
+		{#if showMobilePreview && selectedRfd}
+			<div
+				class="mobile-preview-overlay"
+				role="button"
+				tabindex="0"
+				onclick={closeMobilePreview}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						closeMobilePreview();
+					}
+				}}
+			>
+				<div
+					class="mobile-preview-content"
+					role="dialog"
+					tabindex="-1"
+					onclick={(e) => e.stopPropagation()}
+					onkeydown={(e) => e.stopPropagation()}
 				>
-					✕
-				</button>
+					<div class="mobile-preview-header">
+						<h2 class="mobile-preview-title">RFD Preview</h2>
+						<button
+							class="mobile-preview-close"
+							onclick={closeMobilePreview}
+							aria-label="Close preview"
+						>
+							✕
+						</button>
+					</div>
+					<div class="mobile-preview-body">
+						<Preview
+							{selectedRfd}
+							isMobileModal={true}
+							user={data.user}
+							onRfdUpdate={handleRfdUpdate}
+						/>
+					</div>
+				</div>
 			</div>
-			<div class="mobile-preview-body">
-				<Preview
-					{selectedRfd}
-					isMobileModal={true}
-					user={data.user}
-					onRfdUpdate={handleRfdUpdate}
-				/>
-			</div>
-		</div>
+		{/if}
 	</div>
 {/if}
 
