@@ -40,10 +40,6 @@ cd ifg-rfd
 # Install dependencies
 pnpm install
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your Google credentials and database settings
-
 # Start the database
 pnpm run db:start
 
