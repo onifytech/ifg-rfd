@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import { downloadImageAsBase64, shouldUpdateAvatar } from '$lib/server/avatar-sync';
 import { GoogleDriveService } from '$lib/server/google-drive';
+import { isEmailAuthorized } from '$lib/server/auth-utils';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const code = url.searchParams.get('code');
@@ -37,6 +38,22 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			}
 		});
 		const googleUser: GoogleUser = await googleUserResponse.json();
+
+		// Check if the user's email domain is authorized
+		if (!isEmailAuthorized(googleUser.email)) {
+			// Clear any OAuth cookies
+			cookies.delete('google_oauth_state', { path: '/' });
+			cookies.delete('google_code_verifier', { path: '/' });
+			cookies.delete('google_redirect_url', { path: '/' });
+			
+			// Redirect to restricted page
+			return new Response(null, {
+				status: 302,
+				headers: {
+					Location: `/restricted?email=${encodeURIComponent(googleUser.email)}`
+				}
+			});
+		}
 
 		const [existingUser] = await db.select().from(user).where(eq(user.googleId, googleUser.sub));
 

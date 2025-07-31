@@ -101,7 +101,6 @@ Required environment variables (see `.env.example`):
 - `GOOGLE_CLIENT_ID/SECRET` - OAuth credentials for user authentication
 - `GOOGLE_SERVICE_ACCOUNT_KEY` - JSON key for service account (RFD storage)
 - `GOOGLE_DRIVE_RFD_FOLDER_ID` - Centralized folder for RFD storage
-- `GOOGLE_WORKSPACE_DOMAIN` - Domain for organization-wide comment access
 - `GOOGLE_RFD_TEAM_EMAILS` - Comma-separated emails for editor access
 - `ORIGIN` - Application URL for OAuth callbacks
 
