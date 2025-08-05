@@ -5,6 +5,8 @@ import { db } from '$lib/server/db';
 import { rfd, user as userTable, rfdEndorsement } from '$lib/server/db/schema';
 import { lucia } from '$lib/server/auth';
 import { eq, count, max, or, ne, and } from 'drizzle-orm';
+import { env } from '$env/dynamic/private';
+
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
 	try {
@@ -29,7 +31,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		// Create Google Drive service using service account for RFD storage
 		// Impersonate the user creating the RFD for proper ownership
-		const driveService = GoogleDriveService.createServiceInstance(user.email);
+		const driveService = GoogleDriveService.createServiceInstance(env.GOOGLE_FILE_OWNER_EMAIL);
 
 		// Create RFD from template
 		const rfdData = {
