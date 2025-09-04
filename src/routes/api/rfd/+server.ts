@@ -151,38 +151,15 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			.from(rfdEndorsement)
 			.where(eq(rfdEndorsement.userId, user.id));
 
-		// Get endorsement details with user info for avatars
-		const endorsementDetails = await db
-			.select({
-				rfdId: rfdEndorsement.rfdId,
-				userId: rfdEndorsement.userId,
-				userName: userTable.name,
-				userPicture: userTable.picture,
-				userAvatarBase64: userTable.avatarBase64,
-				createdAt: rfdEndorsement.createdAt
-			})
-			.from(rfdEndorsement)
-			.leftJoin(userTable, eq(rfdEndorsement.userId, userTable.id))
-			.orderBy(rfdEndorsement.createdAt);
-
-		// Combine data
+		// Combine data - only include count and user endorsement status
 		const rfdsWithEndorsements = allRfds.map((rfdItem) => {
 			const endorsementCount = endorsementCounts.find((ec) => ec.rfdId === rfdItem.id)?.count || 0;
 			const userHasEndorsed = userEndorsements.some((ue) => ue.rfdId === rfdItem.id);
-			const endorsers = endorsementDetails
-				.filter((ed) => ed.rfdId === rfdItem.id)
-				.map((ed) => ({
-					userId: ed.userId,
-					name: ed.userName,
-					picture: ed.userAvatarBase64 || ed.userPicture, // Prefer base64, fallback to URL
-					createdAt: ed.createdAt
-				}));
 
 			return {
 				...rfdItem,
 				endorsementCount,
-				userHasEndorsed,
-				endorsers
+				userHasEndorsed
 			};
 		});
 

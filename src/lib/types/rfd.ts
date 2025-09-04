@@ -20,5 +20,4 @@ export type RFD = {
 	updatedAt: string;
 	endorsementCount: number;
 	userHasEndorsed: boolean;
-	endorsers: Endorser[];
 };
