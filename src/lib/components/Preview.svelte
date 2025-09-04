@@ -9,6 +9,7 @@
 	import { toast } from '$lib/stores/toast.js';
 	import type { RFD } from '$lib/types/rfd';
 	import type { User } from '$lib/types/user';
+	import type { Endorser } from '$lib/types/rfd';
 
 	export let selectedRfd: RFD | null = null;
 	export let isMobileModal: boolean = false;
@@ -16,6 +17,8 @@
 	export let onRfdUpdate: ((updatedRfd: RFD) => void) | null = null;
 
 	let isEndorsing = false;
+	let endorsers: Endorser[] = [];
+	let loadingEndorsers = false;
 	let isEditing = false;
 	let isLoading = false;
 	let editedTitle = '';
@@ -75,6 +78,13 @@
 
 		return statusOptions;
 	})();
+
+	// Clear endorsers when switching to a different RFD
+	$: if (selectedRfd) {
+		// Clear endorsers data when RFD changes
+		endorsers = [];
+		loadingEndorsers = false;
+	}
 	function formatDate(dateString: string) {
 		return new Date(dateString).toLocaleDateString('en-US', {
 			year: 'numeric',
@@ -106,6 +116,10 @@
 				if (onRfdUpdate) {
 					onRfdUpdate(result.rfd);
 				}
+				// Refresh endorsers if we're on the hearters tab
+				if (activeTab === 'pumping' && endorsers.length > 0) {
+					await loadEndorsers();
+				}
 				// Show success toast
 				const message = action === 'heart' ? 'RFD hearted!' : 'Heart removed';
 				toast.success(message);
@@ -134,8 +148,36 @@
 			toast.error('Failed to copy link. Please copy manually: ' + url);
 		}
 	}
-	function setActiveTab(tabId: string) {
+	async function setActiveTab(tabId: string) {
 		activeTab = tabId;
+		// Load endorsers when switching to the Hearters tab
+		if (tabId === 'pumping' && selectedRfd && endorsers.length === 0 && !loadingEndorsers) {
+			await loadEndorsers();
+		}
+	}
+
+	async function loadEndorsers() {
+		if (!selectedRfd || loadingEndorsers) return;
+		
+		loadingEndorsers = true;
+		try {
+			const response = await fetch(`/api/rfd/${selectedRfd.id}/endorsers`);
+			if (response.ok) {
+				const data = await response.json();
+				endorsers = data.endorsers || [];
+			} else if (response.status === 403) {
+				// Access denied for draft RFD
+				endorsers = [];
+			} else {
+				console.error('Failed to load endorsers:', response.statusText);
+				endorsers = [];
+			}
+		} catch (error) {
+			console.error('Error loading endorsers:', error);
+			endorsers = [];
+		} finally {
+			loadingEndorsers = false;
+		}
 	}
 	function parseTags(tags: string | null): string[] {
 		if (!tags) return [];
@@ -647,9 +689,14 @@
 								</span>
 							</button>
 						</div>
-						{#if selectedRfd.endorsers && selectedRfd.endorsers.length > 0}
+						{#if loadingEndorsers}
+							<div class="py-8 text-center">
+								<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+								<p class="text-gray-500">Loading hearters...</p>
+							</div>
+						{:else if endorsers && endorsers.length > 0}
 							<div class="space-y-3">
-								{#each selectedRfd.endorsers as endorser (endorser.userId)}
+								{#each endorsers as endorser (endorser.userId)}
 									<div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
 										{#if endorser.picture}
 											<img
