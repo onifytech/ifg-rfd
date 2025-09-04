@@ -4,6 +4,8 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Searchbar from '$lib/components/Searchbar.svelte';
 	import ColumSection from '$lib/components/ColumSection.svelte';
 	import type { RFD } from '$lib/types/rfd';
@@ -14,28 +16,126 @@
 	let showCreateModal = false;
 	let mobileNavOpen = false;
 	let showMobilePreview = false;
-	let rfds = data.rfds;
+	let allRfds: RFD[] = [];
+	let filteredRfds: RFD[] = [];
 	let currentFilter = data.currentFilter;
+	let isLoading = true;
+	let loadError: string | null = null;
+	let targetRfdExists = true; // Track if URL-requested RFD actually exists
 
-	// Reactive update when data changes (e.g., when navigating to a new filter)
-	$: {
-		rfds = data.rfds;
-		currentFilter = data.currentFilter;
-		// Clear selection when filtering changes to avoid showing RFD not in current filter
-		if (selectedRfd && !rfds.some((rfd: RFD) => rfd.id === selectedRfd?.id)) {
-			selectedRfd = null;
+	// Load RFDs on mount
+	async function loadRfds() {
+		isLoading = true;
+		loadError = null;
+		try {
+			const response = await fetch('/api/rfd');
+			if (!response.ok) {
+				throw new Error('Failed to load RFDs');
+			}
+			const data = await response.json();
+			allRfds = data.rfds || [];
+			filteredRfds = [...allRfds];
+			
+			// Apply initial URL filters if present
+			applyInitialFilters();
+		} catch (error) {
+			console.error('Error loading RFDs:', error);
+			loadError = 'Failed to load RFDs. Please try refreshing the page.';
+		} finally {
+			isLoading = false;
 		}
 	}
 
-	// Auto-select RFD if targetRfd is provided
-	onMount(() => {
-		if (data.targetRfd) {
-			selectedRfd = data.targetRfd;
+	function applyInitialFilters() {
+		if (currentFilter.status) {
+			filteredRfds = allRfds.filter(rfd => rfd.status === currentFilter.status);
+		} else if (currentFilter.general === 'recent') {
+			const thirtyDaysAgo = new Date();
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+			filteredRfds = allRfds
+				.filter(rfd => new Date(rfd.updatedAt) >= thirtyDaysAgo)
+				.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+		}
+	}
+
+	let urlUpdateTimer: NodeJS.Timeout;
+	
+	function handleFilterUpdate(event: CustomEvent) {
+		filteredRfds = event.detail.rfds;
+		
+		// Clear selection when filters change - user is searching, not viewing
+		selectedRfd = null;
+		
+		// Debounce URL updates to avoid disrupting typing
+		if (urlUpdateTimer) {
+			clearTimeout(urlUpdateTimer);
+		}
+		
+		urlUpdateTimer = setTimeout(() => {
+			updateUrlWithFilters(event.detail);
+		}, 500); // Update URL after user stops typing for 500ms
+	}
+
+	function updateUrlWithFilters(filterData: any) {
+		const params = new URLSearchParams();
+		
+		// Add filter parameters to URL
+		if (filterData.statusFilter) {
+			params.set('status', filterData.statusFilter);
+		}
+		if (filterData.tagFilter) {
+			params.set('tag', filterData.tagFilter);
+		}
+		if (filterData.searchTerm) {
+			params.set('search', filterData.searchTerm);
+		}
+		if (filterData.sortBy && filterData.sortBy !== 'rfd_number') {
+			params.set('sort', filterData.sortBy);
+		}
+		
+		// Always use root path when filtering (no RFD selection)
+		const queryString = params.toString();
+		const newUrl = `/${queryString ? '?' + queryString : ''}`;
+		
+		// Use replaceState with keepFocus to prevent input losing focus
+		goto(newUrl, { replaceState: true, keepFocus: true });
+	}
+
+	function clearRfdFromUrl() {
+		// This function is no longer needed since updateUrlWithFilters handles it
+		// But keeping it for backward compatibility
+		const currentParams = new URLSearchParams($page.url.search);
+		const newUrl = `/${currentParams.toString() ? '?' + currentParams.toString() : ''}`;
+		goto(newUrl, { replaceState: true });
+	}
+
+	// Load RFDs on mount and handle target RFD
+	onMount(async () => {
+		await loadRfds();
+		
+		// If specific RFD number is requested, find and select it
+		if (data.targetRfdNumber !== null && allRfds.length > 0) {
+			const targetRfd = allRfds.find(rfd => rfd.rfdNumber === data.targetRfdNumber);
+			if (targetRfd) {
+				selectedRfd = targetRfd;
+				targetRfdExists = true;
+			} else {
+				// RFD number in URL doesn't exist in the database
+				targetRfdExists = false;
+			}
 		}
 	});
 
-	function handleRfdSelect(rfd: RFD) {
+	function handleRfdSelect(event: CustomEvent<RFD>) {
+		const rfd = event.detail;
 		selectedRfd = rfd;
+
+		// Update URL to reflect selected RFD while preserving current filters
+		// We need to trigger updateUrlWithFilters with current filter state
+		// For now, just preserve query params
+		const currentParams = new URLSearchParams($page.url.search);
+		const newUrl = `/${rfd.rfdNumber}${currentParams.toString() ? '?' + currentParams.toString() : ''}`;
+		goto(newUrl, { replaceState: true });
 
 		// On mobile, show preview in modal
 		if (window.innerWidth <= 768) {
@@ -77,9 +177,11 @@
 		}
 	}
 
-	function handleRfdUpdate(updatedRfd: RFD) {
-		// Update the RFD in the list
-		rfds = rfds.map((rfd: RFD) => (rfd.id === updatedRfd.id ? updatedRfd : rfd));
+	function handleRfdUpdate(event: CustomEvent<RFD>) {
+		const updatedRfd = event.detail;
+		// Update the RFD in all lists
+		allRfds = allRfds.map((rfd: RFD) => (rfd.id === updatedRfd.id ? updatedRfd : rfd));
+		filteredRfds = filteredRfds.map((rfd: RFD) => (rfd.id === updatedRfd.id ? updatedRfd : rfd));
 
 		// Update selected RFD if it's the one that was updated
 		if (selectedRfd?.id === updatedRfd.id) {
@@ -88,24 +190,16 @@
 	}
 
 	async function handleRfdCreated() {
-		// Refresh the RFD list after creation
-		try {
-			const response = await fetch('/api/rfd');
-			if (response.ok) {
-				const data = await response.json();
-				rfds = data.rfds;
-			}
-		} catch (error) {
-			console.error('Error refreshing RFD list:', error);
-		}
+		// Reload RFDs after creation
+		await loadRfds();
 	}
 </script>
 
 <svelte:head>
 	<title
-		>{data.targetRfdNumber && data.targetRfd
-			? `RFD ${data.targetRfdNumber}: ${data.targetRfd.title}`
-			: data.targetRfdNumber && data.rfdNotFound
+		>{data.targetRfdNumber && selectedRfd
+			? `RFD ${data.targetRfdNumber}: ${selectedRfd.title}`
+			: data.targetRfdNumber && !isLoading && !selectedRfd
 				? `RFD ${data.targetRfdNumber} Not Found`
 				: 'RFD Index'}</title
 	>
@@ -124,7 +218,7 @@
 />
 
 <!-- Show RFD not found message if applicable -->
-{#if data.rfdNotFound}
+{#if data.targetRfdNumber !== null && !isLoading && !targetRfdExists}
 	<div class="flex min-h-screen items-center justify-center bg-gray-50">
 		<div class="mx-auto max-w-md px-6 text-center">
 			<div class="mb-6">
@@ -165,9 +259,21 @@
 {:else}
 	<section class="section">
 		<div class="container">
-			<Searchbar {currentFilter} {data} />
+			<Searchbar 
+				{currentFilter} 
+				{allRfds}
+				on:filter={handleFilterUpdate}
+			/>
 			<hr />
-			<ColumSection {data} />
+			<ColumSection 
+				rfds={filteredRfds}
+				{isLoading}
+				{loadError}
+				{selectedRfd}
+				user={data.user}
+				on:rfdSelect={handleRfdSelect}
+				on:rfdUpdate={handleRfdUpdate}
+			/>
 		</div>
 	</section>
 {/if}
@@ -224,7 +330,7 @@
 					{selectedRfd}
 					isMobileModal={true}
 					user={data.user}
-					onRfdUpdate={handleRfdUpdate}
+					onRfdUpdate={(updatedRfd) => handleRfdUpdate(new CustomEvent('update', { detail: updatedRfd }))}
 				/>
 			</div>
 		</div>

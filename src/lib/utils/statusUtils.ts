@@ -121,7 +121,7 @@ export const statusDescriptions: Record<RfdStatus, StatusDescription> = {
  * @param {string} status - The status value
  * @returns {string} Hex color code
  */
-export function getStatusColor(status) {
+export function getStatusColor(status: string) {
 	switch (status) {
 		case 'draft':
 			return '#94a3b8'; // slate-400
@@ -148,7 +148,7 @@ export function getStatusColor(status) {
  * @param {string} status - The status value
  * @returns {string} Display label
  */
-export function getStatusLabel(status) {
+export function getStatusLabel(status: string) {
 	// Handle legacy status mappings
 	const normalizedStatus = normalizeStatus(status);
 	const option = statusOptions.find((opt) => opt.value === normalizedStatus);
@@ -160,7 +160,7 @@ export function getStatusLabel(status) {
  * @param {string} status - The status value
  * @returns {string} Normalized status
  */
-export function normalizeStatus(status) {
+export function normalizeStatus(status: string) {
 	switch (status) {
 		case 'review':
 			return 'open_for_review';

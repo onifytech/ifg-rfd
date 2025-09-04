@@ -5,20 +5,9 @@
 	export let rfds: RFD[] = [];
 	export let onRfdSelect: (rfd: RFD) => void;
 	export let selectedRfd: RFD | null = null;
-	export let currentFilter: { status: string | null; general: string | null } = {
-		status: null,
-		general: null
-	};
+	export let isLoading: boolean = false;
+	export let loadError: string | null = null;
 
-	// Get filter description for display
-	function getFilterDescription(): string {
-		if (currentFilter.status) {
-			return `${getStatusLabel(currentFilter.status)}`;
-		} else if (currentFilter.general === 'recent') {
-			return 'Recent RFDs (Last 30 days)';
-		}
-		return 'All RFDs';
-	}
 
 	function formatDate(dateString: string) {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -75,12 +64,37 @@
 </script>
 
 <div class="content column is-one-third bg-white">
-	{#if rfds.length === 0}
+	{#if isLoading}
+		<!-- Loading skeleton -->
+		<div class="loading-container">
+			<p class="loading-text">Loading RFDs...</p>
+			<ul class="rfd-list">
+				{#each [1, 2, 3, 4, 5] as i (i)}
+					<li class="rfd-item skeleton">
+						<div class="skeleton-header">
+							<div class="skeleton-title"></div>
+							<div class="skeleton-status"></div>
+						</div>
+						<div class="skeleton-summary"></div>
+						<div class="skeleton-footer">
+							<div class="skeleton-number"></div>
+							<div class="skeleton-pump"></div>
+						</div>
+					</li>
+				{/each}
+			</ul>
+		</div>
+	{:else if loadError}
 		<div class="empty-state">
-			<p>No RFDs found{currentFilter.status || currentFilter.general ? ' for this filter' : ''}.</p>
-			{#if currentFilter.status || currentFilter.general}
-				<a href="/" class="clear-filter-link">View all RFDs</a>
-			{/if}
+			<p class="error-message">{loadError}</p>
+			<button onclick={() => window.location.reload()} class="retry-button">
+				Retry
+			</button>
+		</div>
+	{:else if rfds.length === 0}
+		<div class="empty-state">
+			<p>No RFDs found.</p>
+			<p class="help-text">Try adjusting your filters or create a new RFD.</p>
 		</div>
 	{:else}
 		<ul class="rfd-list">
@@ -136,19 +150,6 @@
 </div>
 
 <style>
-	.clear-filter-link {
-		color: #3b82f6;
-		text-decoration: none;
-		font-size: 0.875rem;
-		margin-top: 0.5rem;
-		display: inline-block;
-	}
-
-	.clear-filter-link:hover {
-		color: #2563eb;
-		text-decoration: underline;
-	}
-
 	.empty-state {
 		text-align: center;
 		padding: 3rem 1.5rem; /* rhythm-lg vertical, rhythm-base horizontal */
@@ -313,5 +314,102 @@
 		border-radius: 12px;
 		font-size: 12px;
 		font-weight: 500;
+	}
+	.loading-container {
+		padding: 1.5rem;
+	}
+
+	.loading-text {
+		text-align: center;
+		color: #6b7280;
+		font-size: 0.875rem;
+		margin-bottom: 1rem;
+	}
+
+	.skeleton {
+		animation: pulse 1.5s ease-in-out infinite;
+		pointer-events: none;
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+	}
+
+	.skeleton-header {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 0.75rem;
+	}
+
+	.skeleton-title {
+		height: 1.25rem;
+		width: 60%;
+		background: #e5e7eb;
+		border-radius: 4px;
+	}
+
+	.skeleton-status {
+		height: 1.25rem;
+		width: 80px;
+		background: #e5e7eb;
+		border-radius: 12px;
+	}
+
+	.skeleton-summary {
+		height: 1rem;
+		width: 90%;
+		background: #e5e7eb;
+		border-radius: 4px;
+		margin-bottom: 0.75rem;
+	}
+
+	.skeleton-footer {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.skeleton-number {
+		height: 1rem;
+		width: 60px;
+		background: #e5e7eb;
+		border-radius: 5px;
+	}
+
+	.skeleton-pump {
+		height: 1rem;
+		width: 40px;
+		background: #e5e7eb;
+		border-radius: 4px;
+	}
+
+	.error-message {
+		color: #dc2626;
+		margin-bottom: 1rem;
+	}
+
+	.retry-button {
+		background-color: #3b82f6;
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		border: none;
+		cursor: pointer;
+		font-size: 0.875rem;
+		transition: background-color 0.2s;
+	}
+
+	.retry-button:hover {
+		background-color: #2563eb;
+	}
+
+	.help-text {
+		color: #9ca3af;
+		font-size: 0.875rem;
+		margin-top: 0.5rem;
 	}
 </style>
