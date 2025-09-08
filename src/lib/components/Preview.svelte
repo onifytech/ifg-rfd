@@ -187,31 +187,6 @@
 			return [];
 		}
 	}
-	function generateTagColor(tag: string): string {
-		// Generate a consistent color based on the tag name
-		let hash = 0;
-		for (let i = 0; i < tag.length; i++) {
-			hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-		}
-		const colors = [
-			'#ef4444',
-			'#f59e0b',
-			'#eab308',
-			'#22c55e',
-			'#10b981',
-			'#06b6d4',
-			'#3b82f6',
-			'#6366f1',
-			'#8b5cf6',
-			'#a855f7',
-			'#ec4899',
-			'#f43f5e',
-			'#64748b',
-			'#6b7280',
-			'#374151'
-		];
-		return colors[Math.abs(hash) % colors.length];
-	}
 	async function loadAvailableTags() {
 		try {
 			const response = await fetch('/api/rfd/tags');
@@ -403,7 +378,7 @@
 						{#each parseTags(selectedRfd.tags) as tag (tag)}
 							<span
 								class="rounded-full px-2 py-1 text-xs font-medium text-white"
-								style="background-color: {generateTagColor(tag)}"
+								style="background-color: #374151"
 							>
 								{tag}
 							</span>
@@ -501,7 +476,7 @@
 										{#each editedTags as tag (tag)}
 											<span
 												class="tag-chip inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white"
-												style="background-color: {generateTagColor(tag)}"
+												style="background-color: #374151"
 											>
 												{tag}
 												<button

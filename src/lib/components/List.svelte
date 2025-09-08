@@ -26,34 +26,6 @@
 		}
 	}
 
-	function generateTagColor(tag: string): string {
-		// Generate a consistent color based on the tag name
-		let hash = 0;
-		for (let i = 0; i < tag.length; i++) {
-			hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-		}
-
-		const colors = [
-			'#ef4444',
-			'#f59e0b',
-			'#eab308',
-			'#22c55e',
-			'#10b981',
-			'#06b6d4',
-			'#3b82f6',
-			'#6366f1',
-			'#8b5cf6',
-			'#a855f7',
-			'#ec4899',
-			'#f43f5e',
-			'#64748b',
-			'#6b7280',
-			'#374151'
-		];
-
-		return colors[Math.abs(hash) % colors.length];
-	}
-
 	function handleRfdClick(rfd: RFD) {
 		onRfdSelect(rfd);
 	}
@@ -127,7 +99,7 @@
 							<div class="tags">
 								<span class="text-sm">Tags:</span>
 								{#each parseTags(rfd.tags) as tag (tag)}
-									<span class="tag" style="background-color: {generateTagColor(tag)}">{tag}</span>
+									<span class="tag" style="background-color: #374151">{tag}</span>
 								{/each}
 							</div>
 						{/if}
@@ -282,6 +254,8 @@
 		font-weight: 500;
 		color: white;
 		white-space: nowrap;
+		text-transform: uppercase;
+		font-weight: bold;
 	}
 
 	.summary {

@@ -132,7 +132,7 @@ export function getStatusColor(status: string) {
 		case 'approved': // Legacy support
 			return '#10b981'; // emerald-500
 		case 'enforced':
-			return '#059669'; // emerald-600
+			return '#111111';
 		case 'rejected':
 			return '#ef4444'; // red-500
 		case 'retracted':
