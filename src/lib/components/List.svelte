@@ -82,7 +82,7 @@
 									</div>
 									<div class="status-section text-right">
 										<span
-											class="status-badge"
+											class="status-badge {rfd.status === 'enforced' ? 'enforced' : ''}"
 											style="background-color: {getStatusColor(rfd.status)};"
 										>
 											{getStatusLabel(rfd.status)}
@@ -99,7 +99,7 @@
 							<div class="tags">
 								<span class="text-sm">Tags:</span>
 								{#each parseTags(rfd.tags) as tag (tag)}
-									<span class="tag" style="background-color: #374151">{tag}</span>
+									<span class="tag px-2 py-1 border border-gray-400">{tag}</span>
 								{/each}
 							</div>
 						{/if}
@@ -254,10 +254,12 @@
 		font-weight: 500;
 		color: white;
 		white-space: nowrap;
+	}
+
+	:global(.status-badge.enforced) {
 		text-transform: uppercase;
 		font-weight: bold;
 	}
-
 	.summary {
 		color: #6b7280;
 		line-height: 1.5rem; /* rhythm base line height */
@@ -283,11 +285,11 @@
 	}
 
 	.tag {
-		color: white;
 		padding: 2px 8px;
 		border-radius: 12px;
 		font-size: 12px;
 		font-weight: 500;
+		background-color: white;
 	}
 	.loading-container {
 		padding: 1.5rem;
