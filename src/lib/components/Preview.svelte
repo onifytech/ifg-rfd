@@ -377,8 +377,7 @@
 					<div class="flex flex-wrap gap-2">
 						{#each parseTags(selectedRfd.tags) as tag (tag)}
 							<span
-								class="rounded-full px-2 py-1 text-xs font-medium text-white"
-								style="background-color: #374151"
+								class="rounded-full px-2 py-1 text-xs font-medium border border-gray-400"
 							>
 								{tag}
 							</span>
