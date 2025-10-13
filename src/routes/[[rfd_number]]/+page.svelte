@@ -59,18 +59,22 @@
 	}
 
 	let urlUpdateTimer: NodeJS.Timeout;
-	
+	let isInitialLoad = true;
+
 	function handleFilterUpdate(event: CustomEvent) {
 		filteredRfds = event.detail.rfds;
-		
-		// Clear selection when filters change - user is searching, not viewing
-		selectedRfd = null;
-		
+
+		// Don't clear selection on initial load when we have a target RFD
+		if (!isInitialLoad || data.targetRfdNumber === null) {
+			// Clear selection when filters change - user is searching, not viewing
+			selectedRfd = null;
+		}
+
 		// Debounce URL updates to avoid disrupting typing
 		if (urlUpdateTimer) {
 			clearTimeout(urlUpdateTimer);
 		}
-		
+
 		urlUpdateTimer = setTimeout(() => {
 			updateUrlWithFilters(event.detail);
 		}, 500); // Update URL after user stops typing for 500ms
@@ -78,7 +82,7 @@
 
 	function updateUrlWithFilters(filterData: any) {
 		const params = new URLSearchParams();
-		
+
 		// Add filter parameters to URL
 		if (filterData.statusFilter) {
 			params.set('status', filterData.statusFilter);
@@ -92,11 +96,19 @@
 		if (filterData.sortBy && filterData.sortBy !== 'rfd_number') {
 			params.set('sort', filterData.sortBy);
 		}
-		
-		// Always use root path when filtering (no RFD selection)
+
+		// Preserve RFD number in URL if one is selected or we have a target from URL
+		let basePath = '/';
+		if (selectedRfd) {
+			basePath = `/${selectedRfd.rfdNumber}`;
+		} else if (isInitialLoad && data.targetRfdNumber !== null) {
+			// During initial load, preserve the RFD number from the URL
+			basePath = `/${data.targetRfdNumber}`;
+		}
+
 		const queryString = params.toString();
-		const newUrl = `/${queryString ? '?' + queryString : ''}`;
-		
+		const newUrl = `${basePath}${queryString ? '?' + queryString : ''}`;
+
 		// Use replaceState with keepFocus to prevent input losing focus
 		goto(newUrl, { replaceState: true, keepFocus: true });
 	}
@@ -112,7 +124,7 @@
 	// Load RFDs on mount and handle target RFD
 	onMount(async () => {
 		await loadRfds();
-		
+
 		// If specific RFD number is requested, find and select it
 		if (data.targetRfdNumber !== null && allRfds.length > 0) {
 			const targetRfd = allRfds.find(rfd => rfd.rfdNumber === data.targetRfdNumber);
@@ -124,6 +136,11 @@
 				targetRfdExists = false;
 			}
 		}
+
+		// Mark initial load as complete after a short delay to ensure filters have been applied
+		setTimeout(() => {
+			isInitialLoad = false;
+		}, 100);
 	});
 
 	function handleRfdSelect(event: CustomEvent<RFD>) {
